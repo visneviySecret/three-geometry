@@ -1,18 +1,10 @@
 <template>
-  <div id="app">
-    <h1>Three Geometry</h1>
-  </div>
+  <ThemeProvider>
+    <MainContent />
+  </ThemeProvider>
 </template>
 
 <script setup lang="ts">
-// Your component logic here
+import ThemeProvider from "./theme/ThemeProvider.vue";
+import MainContent from "./components/MainContent.vue";
 </script>
-
-<style scoped>
-#app {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
-</style>

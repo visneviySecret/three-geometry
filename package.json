@@ -12,7 +12,8 @@
   "dependencies": {
     "@types/three": "^0.176.0",
     "three": "^0.176.0",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue3-styled-components": "^1.2.1"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.3",
