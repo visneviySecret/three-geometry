@@ -1,8 +1,13 @@
 import { inject } from "vue";
+import { theme } from "./theme";
 import type { Theme } from "./theme";
 
-export const useTheme = () => {
-  const theme = inject<Theme>("theme");
+export const useTheme = (): Theme => {
+  const injectedTheme = inject<Theme>("theme");
 
-  return theme;
+  if (!injectedTheme) {
+    return theme;
+  }
+
+  return injectedTheme;
 };
