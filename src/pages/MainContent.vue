@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import styled from "vue3-styled-components";
-import { useTheme } from "../theme/useTheme";
+import { useTheme } from "../app/theme/useTheme";
 
 const theme = useTheme();
 

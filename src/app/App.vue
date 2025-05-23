@@ -6,5 +6,5 @@
 
 <script setup lang="ts">
 import ThemeProvider from "./theme/ThemeProvider.vue";
-import MainContent from "./components/MainContent.vue";
+import MainContent from "../pages/MainContent.vue";
 </script>
