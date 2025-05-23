@@ -1,9 +1,14 @@
 <template>
   <AppContainer>
     <Title>Three Geometry</Title>
-    <SceneContainer>
-      <ThreeScene />
-    </SceneContainer>
+    <ScenesContainer>
+      <SceneContainer>
+        <ThreeScene />
+      </SceneContainer>
+      <SceneContainer>
+        <DoorScene />
+      </SceneContainer>
+    </ScenesContainer>
   </AppContainer>
 </template>
 
@@ -11,6 +16,7 @@
 import styled from "vue3-styled-components";
 import { useTheme } from "../app/theme/useTheme";
 import { ThreeScene } from "@/features/scene3d";
+import { DoorScene } from "@/features/scene3d";
 import { AppContainer } from "@/shared/ui/AppContainer";
 
 const theme = useTheme();
@@ -19,6 +25,13 @@ const Title = styled.h1`
   font-size: 2.5rem;
   color: ${() => theme.colors.text};
   margin: 0;
+`;
+
+const ScenesContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
 `;
 
 const SceneContainer = styled.div`
