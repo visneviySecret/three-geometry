@@ -16,6 +16,7 @@
     "vue3-styled-components": "^1.2.1"
   },
   "devDependencies": {
+    "@types/node": "^22.15.21",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue/tsconfig": "^0.7.0",
     "typescript": "~5.8.3",
