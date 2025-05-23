@@ -28,9 +28,3 @@ const Title = styled.h1`
   color: ${() => theme.colors.text};
 `;
 </script>
-
-<script lang="ts">
-export default {
-  name: "MainContent",
-};
-</script>

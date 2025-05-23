@@ -8,9 +8,3 @@ import { theme } from "./theme";
 
 provide("theme", theme);
 </script>
-
-<script lang="ts">
-export default {
-  name: "ThemeProvider",
-};
-</script>
