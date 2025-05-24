@@ -23,6 +23,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Door } from "@/entities/geometry";
 import { DoorController } from "@/entities/geometry/controllers/DoorController";
 import { VHSGrid } from "@/entities/geometry/model/VHSGrid";
+import { Cube, Sphere } from "@/entities/geometry";
 
 // Константы для настройки сцены
 const CAMERA_FOV = 75;
@@ -41,6 +42,12 @@ const DIRECTIONAL_LIGHT_POSITION = new Vector3(5, 5, 5);
 // Константы для управления
 const CONTROLS_DAMPING = 0.05;
 
+// Константы для анимации
+const ROTATION_SPEED = 0.01;
+const ORBIT_SPEED = 0.002;
+const ORBIT_RADIUS = 1.5;
+const ORBIT_HEIGHT = 2.5;
+
 const container = ref<HTMLDivElement | null>(null);
 let scene: Scene;
 let camera: PerspectiveCamera;
@@ -55,6 +62,8 @@ let selectedPart: Mesh | null = null;
 let resizePlane: Plane;
 let animationFrameId: number;
 let initialMousePosition: Vector2 | null = null;
+let cube: Cube;
+let sphere: Sphere;
 
 const initScene = () => {
   if (!container.value) return;
@@ -115,12 +124,44 @@ const initObjects = () => {
   vhsGrid = new VHSGrid(door.getHeight());
   scene.add(vhsGrid.mesh);
 
+  // Добавляем куб и сферу
+  cube = new Cube(1);
+  sphere = new Sphere(0.7);
+
+  // Располагаем объекты над дверью
+  cube.setPosition(-1.5, ORBIT_HEIGHT, 0);
+  sphere.setPosition(1.5, ORBIT_HEIGHT, 0);
+
+  scene.add(cube.mesh);
+  scene.add(sphere.mesh);
+
   const axesHelper = new AxesHelper(5);
   scene.add(axesHelper);
 };
 
 const animate = () => {
   animationFrameId = requestAnimationFrame(animate);
+
+  // Вращение и орбитальное движение куба и сферы
+  if (cube && sphere) {
+    // Собственное вращение объектов
+    cube.mesh.rotation.z += ROTATION_SPEED;
+    sphere.mesh.rotation.z += ROTATION_SPEED;
+
+    // Орбитальное движение вокруг центральной оси
+    const time = Date.now() * ORBIT_SPEED;
+    cube.setPosition(
+      Math.cos(time) * ORBIT_RADIUS,
+      ORBIT_HEIGHT,
+      Math.sin(time) * ORBIT_RADIUS
+    );
+    sphere.setPosition(
+      Math.cos(time + Math.PI) * ORBIT_RADIUS,
+      ORBIT_HEIGHT,
+      Math.sin(time + Math.PI) * ORBIT_RADIUS
+    );
+  }
+
   vhsGrid.update();
   controls.update();
   renderer.render(scene, camera);
