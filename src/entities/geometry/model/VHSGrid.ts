@@ -9,7 +9,7 @@ import {
 } from "three";
 
 export class VHSGrid {
-  private static readonly GRID_SIZE = 20;
+  public static readonly GRID_SIZE = 20;
   private static readonly GRID_DIVISIONS = 20;
   private static readonly GRID_COLOR = 0x00ffff;
   private static readonly FLOOR_OPACITY = 0.1;
@@ -17,7 +17,7 @@ export class VHSGrid {
 
   public mesh: Group;
   private vhsShaderMaterial: ShaderMaterial;
-  private yPosition: number;
+  public yPosition: number;
 
   constructor(doorHeight: number) {
     this.mesh = new Group();

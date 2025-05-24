@@ -24,6 +24,7 @@ import { Door } from "@/entities/geometry";
 import { DoorController } from "@/entities/geometry/controllers/DoorController";
 import { VHSGrid } from "@/entities/geometry/model/VHSGrid";
 import { Cube, Sphere } from "@/entities/geometry";
+import { Fence } from "@/entities/geometry/model/Fence";
 
 // Константы для настройки сцены
 const CAMERA_FOV = 75;
@@ -64,6 +65,7 @@ let animationFrameId: number;
 let initialMousePosition: Vector2 | null = null;
 let cube: Cube;
 let sphere: Sphere;
+let fence: Fence;
 
 const initScene = () => {
   if (!container.value) return;
@@ -127,13 +129,16 @@ const initObjects = () => {
   // Добавляем куб и сферу
   cube = new Cube(1);
   sphere = new Sphere(0.7);
-
-  // Располагаем объекты над дверью
   cube.setPosition(-1.5, ORBIT_HEIGHT, 0);
   sphere.setPosition(1.5, ORBIT_HEIGHT, 0);
-
   scene.add(cube.mesh);
   scene.add(sphere.mesh);
+
+  // Добавляем забор на уровне сетки
+  const gridSize = VHSGrid.GRID_SIZE;
+  fence = new Fence(gridSize, gridSize, 1);
+  fence.mesh.position.y = vhsGrid.yPosition; // Позиционируем на уровне сетки
+  scene.add(fence.mesh);
 
   const axesHelper = new AxesHelper(5);
   scene.add(axesHelper);
