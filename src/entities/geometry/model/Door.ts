@@ -14,6 +14,7 @@ export class Door {
   private width: number;
   private height: number;
   private depth: number;
+  private maxOpenAngle: number;
 
   constructor() {
     this.mesh = new Group();
@@ -21,6 +22,7 @@ export class Door {
     this.height = 3;
     this.depth = 0.1;
     this.resizeHandles = [];
+    this.maxOpenAngle = Math.PI * 0.8; // Максимальный угол открытия (около 144 градусов)
 
     // Создаем основу двери
     const doorGeometry = new BoxGeometry(this.width, this.height, this.depth);
@@ -30,6 +32,8 @@ export class Door {
       metalness: 0.2,
     });
     this.doorMesh = new Mesh(doorGeometry, doorMaterial);
+    // Смещаем геометрию двери вправо для центрирования
+    this.doorMesh.position.x = this.width / 2;
     this.mesh.add(this.doorMesh);
 
     // Создаем ручку двери
@@ -37,11 +41,15 @@ export class Door {
     const handleMaterial = new MeshStandardMaterial({ color: 0x8b4513 });
     this.handleMesh = new Mesh(handleGeometry, handleMaterial);
     this.handleMesh.rotation.x = Math.PI / 2;
-    this.handleMesh.position.set(0.8, 0, 0.1);
+    // Смещаем ручку с учетом смещения двери
+    this.handleMesh.position.set(this.width * 0.9, 0, 0.1);
     this.mesh.add(this.handleMesh);
 
     // Добавляем маркеры изменения размера
     this.createResizeHandles();
+
+    // Смещаем ось вращения к левому торцу
+    this.mesh.position.x = -this.width / 2;
   }
 
   private createResizeHandles() {
@@ -66,9 +74,9 @@ export class Door {
     topHandle.rotation.z = Math.PI / 2;
     bottomHandle.rotation.z = Math.PI / 2;
 
-    // Позиционируем горизонтальные маркеры
-    topHandle.position.set(0, this.height / 2, 0);
-    bottomHandle.position.set(0, -this.height / 2, 0);
+    // Позиционируем горизонтальные маркеры с учетом смещения двери
+    topHandle.position.set(this.width / 2, this.height / 2, 0);
+    bottomHandle.position.set(this.width / 2, -this.height / 2, 0);
 
     // Создаем вертикальные маркеры (для изменения ширины)
     const verticalHandleGeometry = new CylinderGeometry(
@@ -80,9 +88,9 @@ export class Door {
     const leftHandle = new Mesh(verticalHandleGeometry, handleMaterial);
     const rightHandle = new Mesh(verticalHandleGeometry, handleMaterial);
 
-    // Позиционируем вертикальные маркеры
-    leftHandle.position.set(-this.width / 2, 0, 0);
-    rightHandle.position.set(this.width / 2, 0, 0);
+    // Позиционируем вертикальные маркеры с учетом смещения двери
+    leftHandle.position.set(0, 0, 0);
+    rightHandle.position.set(this.width, 0, 0);
 
     // Добавляем все маркеры в группу
     this.resizeHandles = [rightHandle, leftHandle, topHandle, bottomHandle];
@@ -102,6 +110,8 @@ export class Door {
     const newGeometry = new BoxGeometry(this.width, this.height, this.depth);
     this.doorMesh.geometry.dispose();
     this.doorMesh.geometry = newGeometry;
+    // Обновляем позицию двери
+    this.doorMesh.position.x = this.width / 2;
 
     // Удаляем старые маркеры
     this.resizeHandles.forEach((handle) => {
@@ -113,19 +123,26 @@ export class Door {
     // Создаем новые маркеры с обновленными размерами
     this.createResizeHandles();
 
-    // Обновляем позицию ручки двери
-    this.handleMesh.position.x = this.width * 0.4;
+    // Обновляем позицию ручки двери с учетом смещения
+    this.handleMesh.position.x = this.width * 0.9;
+
+    // Обновляем положение оси вращения при изменении размеров
+    this.mesh.position.x = -this.width / 2;
+  }
+
+  public getHandle(): Mesh {
+    return this.handleMesh;
   }
 
   public getResizeHandles(): Mesh[] {
     return this.resizeHandles;
   }
 
-  setPosition(x: number, y: number, z: number): void {
-    this.mesh.position.set(x, y, z);
+  public getMaxOpenAngle(): number {
+    return this.maxOpenAngle;
   }
 
-  setRotation(x: number, y: number, z: number): void {
-    this.mesh.rotation.set(x, y, z);
+  public setRotation(angle: number): void {
+    this.mesh.rotation.y = angle;
   }
 }

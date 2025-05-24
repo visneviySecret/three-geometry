@@ -20,12 +20,14 @@ import {
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Door } from "@/entities/geometry";
+import { DoorController } from "@/entities/geometry/controllers/DoorController";
 
 const container = ref<HTMLDivElement | null>(null);
 let scene: Scene;
 let camera: PerspectiveCamera;
 let renderer: WebGLRenderer;
 let door: Door;
+let doorController: DoorController;
 let controls: OrbitControls;
 let raycaster: Raycaster;
 let mouse: Vector2;
@@ -69,6 +71,7 @@ const init = () => {
   scene.add(directionalLight);
 
   door = new Door();
+  doorController = new DoorController(door);
   scene.add(door.mesh);
 
   const axesHelper = new AxesHelper(5);
@@ -88,8 +91,20 @@ const onMouseDown = (event: MouseEvent) => {
     -((event.clientY - rect.top) / container.value.clientHeight) * 2 + 1;
 
   raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(door.getResizeHandles());
 
+  // Проверяем клик на ручку
+  const handleIntersects = raycaster.intersectObject(door.getHandle());
+  if (handleIntersects.length > 0) {
+    doorController.startDragging(mouse.x);
+    controls.enabled = false;
+    if (container.value) {
+      container.value.style.cursor = "grabbing";
+    }
+    return;
+  }
+
+  // Проверяем клик на маркеры изменения размера
+  const intersects = raycaster.intersectObjects(door.getResizeHandles());
   if (intersects.length > 0) {
     selectedHandle = intersects[0].object as Mesh;
     controls.enabled = false;
@@ -109,7 +124,9 @@ const onMouseMove = (event: MouseEvent) => {
 
   raycaster.setFromCamera(mouse, camera);
 
-  if (selectedHandle) {
+  if (doorController.isDraggingHandle()) {
+    doorController.handleDrag(mouse.x);
+  } else if (selectedHandle) {
     const intersection = new Vector3();
     raycaster.ray.intersectPlane(resizePlane, intersection);
 
@@ -117,17 +134,32 @@ const onMouseMove = (event: MouseEvent) => {
       Math.abs(selectedHandle.position.x) > Math.abs(selectedHandle.position.y)
     ) {
       // Горизонтальное изменение размера
-      const newWidth = Math.abs(intersection.x * 2);
-      door.resize("width", Math.max(0.5, newWidth));
+      doorController.handleResize(
+        "width",
+        new Vector2(intersection.x, intersection.y)
+      );
     } else {
       // Вертикальное изменение размера
-      const newHeight = Math.abs(intersection.y * 2);
-      door.resize("height", Math.max(0.5, newHeight));
+      doorController.handleResize(
+        "height",
+        new Vector2(intersection.x, intersection.y)
+      );
     }
   } else {
-    const intersects = raycaster.intersectObjects(door.getResizeHandles());
+    // Проверяем наведение на ручку
+    const handleIntersects = raycaster.intersectObject(door.getHandle());
     if (container.value) {
-      container.value.style.cursor = intersects.length > 0 ? "grab" : "auto";
+      container.value.style.cursor =
+        handleIntersects.length > 0 ? "grab" : "auto";
+    }
+
+    // Проверяем наведение на маркеры изменения размера
+    const resizeHandleIntersects = raycaster.intersectObjects(
+      door.getResizeHandles()
+    );
+    if (container.value && !handleIntersects.length) {
+      container.value.style.cursor =
+        resizeHandleIntersects.length > 0 ? "grab" : "auto";
     }
   }
 };
@@ -137,6 +169,7 @@ const onMouseUp = () => {
     container.value.style.cursor = "auto";
   }
   selectedHandle = null;
+  doorController.stopDragging();
   controls.enabled = true;
 };
 
