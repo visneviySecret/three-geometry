@@ -14,12 +14,13 @@ const theme = useTheme();
 
 const Title = styled.h1`
   font-size: 2.5rem;
-  color: ${() => theme.colors.text};
+  color: #ffffff;
   margin: 0;
   position: absolute;
   top: 1rem;
   left: 1rem;
   z-index: 1;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
 `;
 
 const SceneContainer = styled.div`
