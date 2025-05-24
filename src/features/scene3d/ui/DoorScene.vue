@@ -17,6 +17,7 @@ import {
   Vector3,
   Mesh,
   Plane,
+  BoxGeometry,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Door } from "@/entities/geometry";
@@ -31,9 +32,10 @@ let doorController: DoorController;
 let controls: OrbitControls;
 let raycaster: Raycaster;
 let mouse: Vector2;
-let selectedHandle: Mesh | null = null;
+let selectedPart: Mesh | null = null;
 let resizePlane: Plane;
 let animationFrameId: number;
+let initialMousePosition: Vector2 | null = null;
 
 const init = () => {
   if (!container.value) return;
@@ -90,6 +92,7 @@ const onMouseDown = (event: MouseEvent) => {
   mouse.y =
     -((event.clientY - rect.top) / container.value.clientHeight) * 2 + 1;
 
+  initialMousePosition = new Vector2(mouse.x, mouse.y);
   raycaster.setFromCamera(mouse, camera);
 
   // Проверяем клик на ручку
@@ -103,10 +106,10 @@ const onMouseDown = (event: MouseEvent) => {
     return;
   }
 
-  // Проверяем клик на маркеры изменения размера
-  const intersects = raycaster.intersectObjects(door.getResizeHandles());
-  if (intersects.length > 0) {
-    selectedHandle = intersects[0].object as Mesh;
+  // Проверяем клик на наличник
+  const frameIntersects = raycaster.intersectObjects(door.frame.mesh.children);
+  if (frameIntersects.length > 0) {
+    selectedPart = frameIntersects[0].object as Mesh;
     controls.enabled = false;
     if (container.value) {
       container.value.style.cursor = "grabbing";
@@ -126,40 +129,46 @@ const onMouseMove = (event: MouseEvent) => {
 
   if (doorController.isDraggingHandle()) {
     doorController.handleDrag(mouse.x);
-  } else if (selectedHandle) {
+  } else if (selectedPart && initialMousePosition) {
     const intersection = new Vector3();
     raycaster.ray.intersectPlane(resizePlane, intersection);
 
-    if (
-      Math.abs(selectedHandle.position.x) > Math.abs(selectedHandle.position.y)
-    ) {
-      // Горизонтальное изменение размера
-      doorController.handleResize(
-        "width",
-        new Vector2(intersection.x, intersection.y)
-      );
-    } else {
-      // Вертикальное изменение размера
-      doorController.handleResize(
-        "height",
-        new Vector2(intersection.x, intersection.y)
-      );
-    }
+    // Определяем, является ли выбранная часть горизонтальной или вертикальной планкой
+    const geometry = selectedPart.geometry as BoxGeometry;
+    // Если ширина планки больше высоты - это горизонтальная планка (верхняя или нижняя)
+    // В этом случае меняем высоту двери
+    const isHorizontal = geometry.parameters.width > geometry.parameters.height;
+
+    // Определяем направление изменения размера
+    const mouseDelta = new Vector2(
+      mouse.x - initialMousePosition.x,
+      mouse.y - initialMousePosition.y
+    );
+
+    // Используем преобладающее направление движения мыши
+    const dominantAxis =
+      Math.abs(mouseDelta.y) > Math.abs(mouseDelta.x) ? "height" : "width";
+
+    // Если планка горизонтальная - меняем высоту, если вертикальная - ширину
+    doorController.handleResize(
+      isHorizontal ? "height" : "width",
+      new Vector2(intersection.x, intersection.y)
+    );
   } else {
     // Проверяем наведение на ручку
     const handleIntersects = raycaster.intersectObject(door.getHandle());
-    if (container.value) {
-      container.value.style.cursor =
-        handleIntersects.length > 0 ? "grab" : "auto";
-    }
 
-    // Проверяем наведение на маркеры изменения размера
-    const resizeHandleIntersects = raycaster.intersectObjects(
-      door.getResizeHandles()
+    // Проверяем наведение на наличник
+    const frameIntersects = raycaster.intersectObjects(
+      door.frame.mesh.children
     );
-    if (container.value && !handleIntersects.length) {
-      container.value.style.cursor =
-        resizeHandleIntersects.length > 0 ? "grab" : "auto";
+
+    if (container.value) {
+      if (handleIntersects.length > 0 || frameIntersects.length > 0) {
+        container.value.style.cursor = "grab";
+      } else {
+        container.value.style.cursor = "auto";
+      }
     }
   }
 };
@@ -168,7 +177,8 @@ const onMouseUp = () => {
   if (container.value) {
     container.value.style.cursor = "auto";
   }
-  selectedHandle = null;
+  selectedPart = null;
+  initialMousePosition = null;
   doorController.stopDragging();
   controls.enabled = true;
 };
