@@ -4,6 +4,7 @@ import { Vector2 } from "three";
 interface DragState {
   isDragging: boolean;
   startX: number;
+  startRotation: number;
 }
 
 export class DoorController {
@@ -11,7 +12,9 @@ export class DoorController {
   private dragState: DragState = {
     isDragging: false,
     startX: 0,
+    startRotation: 0,
   };
+  private currentRotation: number = 0;
 
   constructor(door: Door) {
     this.door = door;
@@ -21,6 +24,7 @@ export class DoorController {
     this.dragState = {
       isDragging: true,
       startX: mouseX,
+      startRotation: this.currentRotation,
     };
   }
 
@@ -33,16 +37,19 @@ export class DoorController {
 
     const dragDelta = mouseX - this.dragState.startX;
     const rotationAngle = this.calculateRotationAngle(dragDelta);
-    this.door.setRotation(rotationAngle);
+    this.currentRotation = this.dragState.startRotation + rotationAngle;
+    this.door.setRotation(this.currentRotation);
   }
 
   private calculateRotationAngle(dragDelta: number): number {
     const rawAngle = dragDelta * this.door.getMaxOpenAngle();
-    return this.clampRotationAngle(rawAngle);
+    return this.clampRotationAngle(rawAngle, this.dragState.startRotation);
   }
 
-  private clampRotationAngle(angle: number): number {
-    return Math.max(-this.door.getMaxOpenAngle(), Math.min(angle, 0));
+  private clampRotationAngle(angle: number, startRotation: number): number {
+    const maxAngle = this.door.getMaxOpenAngle();
+    // Учитываем начальный угол при ограничении
+    return Math.max(-maxAngle - startRotation, Math.min(-startRotation, angle));
   }
 
   public handleResize(
@@ -64,5 +71,12 @@ export class DoorController {
 
   public isDraggingHandle(): boolean {
     return this.dragState.isDragging;
+  }
+
+  public isOpen(): boolean {
+    // Дверь считается открытой, если угол поворота не равен 0
+    // Используем небольшой порог для учета погрешностей в вычислениях
+    const threshold = 0.001;
+    return Math.abs(this.currentRotation) > threshold;
   }
 }

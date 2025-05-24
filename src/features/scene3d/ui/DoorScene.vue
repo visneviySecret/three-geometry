@@ -109,6 +109,13 @@ const onMouseDown = (event: MouseEvent) => {
   // Проверяем клик на наличник
   const frameIntersects = raycaster.intersectObjects(door.frame.mesh.children);
   if (frameIntersects.length > 0) {
+    // Проверяем, закрыта ли дверь
+    if (doorController.isOpen()) {
+      if (container.value) {
+        container.value.style.cursor = "not-allowed";
+      }
+      return;
+    }
     selectedPart = frameIntersects[0].object as Mesh;
     controls.enabled = false;
     if (container.value) {
@@ -133,23 +140,17 @@ const onMouseMove = (event: MouseEvent) => {
     const intersection = new Vector3();
     raycaster.ray.intersectPlane(resizePlane, intersection);
 
-    // Определяем, является ли выбранная часть горизонтальной или вертикальной планкой
     const geometry = selectedPart.geometry as BoxGeometry;
-    // Если ширина планки больше высоты - это горизонтальная планка (верхняя или нижняя)
-    // В этом случае меняем высоту двери
     const isHorizontal = geometry.parameters.width > geometry.parameters.height;
 
-    // Определяем направление изменения размера
     const mouseDelta = new Vector2(
       mouse.x - initialMousePosition.x,
       mouse.y - initialMousePosition.y
     );
 
-    // Используем преобладающее направление движения мыши
     const dominantAxis =
       Math.abs(mouseDelta.y) > Math.abs(mouseDelta.x) ? "height" : "width";
 
-    // Если планка горизонтальная - меняем высоту, если вертикальная - ширину
     doorController.handleResize(
       isHorizontal ? "height" : "width",
       new Vector2(intersection.x, intersection.y)
@@ -164,8 +165,13 @@ const onMouseMove = (event: MouseEvent) => {
     );
 
     if (container.value) {
-      if (handleIntersects.length > 0 || frameIntersects.length > 0) {
+      if (handleIntersects.length > 0) {
         container.value.style.cursor = "grab";
+      } else if (frameIntersects.length > 0) {
+        // Меняем курсор в зависимости от состояния двери
+        container.value.style.cursor = doorController.isOpen()
+          ? "not-allowed"
+          : "grab";
       } else {
         container.value.style.cursor = "auto";
       }
