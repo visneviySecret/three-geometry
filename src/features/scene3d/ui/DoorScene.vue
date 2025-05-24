@@ -12,7 +12,13 @@ import {
   DirectionalLight,
   Color,
   AxesHelper,
+  Raycaster,
+  Vector2,
+  Vector3,
+  Mesh,
+  Plane,
 } from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Door } from "@/entities/geometry";
 
 const container = ref<HTMLDivElement | null>(null);
@@ -20,6 +26,11 @@ let scene: Scene;
 let camera: PerspectiveCamera;
 let renderer: WebGLRenderer;
 let door: Door;
+let controls: OrbitControls;
+let raycaster: Raycaster;
+let mouse: Vector2;
+let selectedHandle: Mesh | null = null;
+let resizePlane: Plane;
 let animationFrameId: number;
 
 const init = () => {
@@ -42,6 +53,14 @@ const init = () => {
   renderer.setPixelRatio(window.devicePixelRatio);
   container.value.appendChild(renderer.domElement);
 
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+
+  raycaster = new Raycaster();
+  mouse = new Vector2();
+  resizePlane = new Plane(new Vector3(0, 0, 1), 0);
+
   const ambientLight = new AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
 
@@ -54,10 +73,76 @@ const init = () => {
 
   const axesHelper = new AxesHelper(5);
   scene.add(axesHelper);
+
+  container.value.addEventListener("mousedown", onMouseDown);
+  container.value.addEventListener("mousemove", onMouseMove);
+  container.value.addEventListener("mouseup", onMouseUp);
+};
+
+const onMouseDown = (event: MouseEvent) => {
+  if (!container.value) return;
+
+  const rect = container.value.getBoundingClientRect();
+  mouse.x = ((event.clientX - rect.left) / container.value.clientWidth) * 2 - 1;
+  mouse.y =
+    -((event.clientY - rect.top) / container.value.clientHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(door.getResizeHandles());
+
+  if (intersects.length > 0) {
+    selectedHandle = intersects[0].object as Mesh;
+    controls.enabled = false;
+    if (container.value) {
+      container.value.style.cursor = "grabbing";
+    }
+  }
+};
+
+const onMouseMove = (event: MouseEvent) => {
+  if (!container.value) return;
+
+  const rect = container.value.getBoundingClientRect();
+  mouse.x = ((event.clientX - rect.left) / container.value.clientWidth) * 2 - 1;
+  mouse.y =
+    -((event.clientY - rect.top) / container.value.clientHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+
+  if (selectedHandle) {
+    const intersection = new Vector3();
+    raycaster.ray.intersectPlane(resizePlane, intersection);
+
+    if (
+      Math.abs(selectedHandle.position.x) > Math.abs(selectedHandle.position.y)
+    ) {
+      // Горизонтальное изменение размера
+      const newWidth = Math.abs(intersection.x * 2);
+      door.resize("width", Math.max(0.5, newWidth));
+    } else {
+      // Вертикальное изменение размера
+      const newHeight = Math.abs(intersection.y * 2);
+      door.resize("height", Math.max(0.5, newHeight));
+    }
+  } else {
+    const intersects = raycaster.intersectObjects(door.getResizeHandles());
+    if (container.value) {
+      container.value.style.cursor = intersects.length > 0 ? "grab" : "auto";
+    }
+  }
+};
+
+const onMouseUp = () => {
+  if (container.value) {
+    container.value.style.cursor = "auto";
+  }
+  selectedHandle = null;
+  controls.enabled = true;
 };
 
 const animate = () => {
   animationFrameId = requestAnimationFrame(animate);
+  controls.update();
   renderer.render(scene, camera);
 };
 
@@ -78,6 +163,11 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  if (container.value) {
+    container.value.removeEventListener("mousedown", onMouseDown);
+    container.value.removeEventListener("mousemove", onMouseMove);
+    container.value.removeEventListener("mouseup", onMouseUp);
+  }
   cancelAnimationFrame(animationFrameId);
   window.removeEventListener("resize", handleResize);
 });
