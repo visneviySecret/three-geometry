@@ -23,6 +23,23 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Door } from "@/entities/geometry";
 import { DoorController } from "@/entities/geometry/controllers/DoorController";
 
+// Константы для настройки сцены
+const CAMERA_FOV = 75;
+const CAMERA_NEAR = 0.1;
+const CAMERA_FAR = 1000;
+const CAMERA_POSITION = new Vector3(0, 0, 5);
+const SCENE_BACKGROUND = new Color(0x2c3e50);
+
+// Константы для освещения
+const AMBIENT_LIGHT_COLOR = 0xffffff;
+const AMBIENT_LIGHT_INTENSITY = 0.5;
+const DIRECTIONAL_LIGHT_COLOR = 0xffffff;
+const DIRECTIONAL_LIGHT_INTENSITY = 1;
+const DIRECTIONAL_LIGHT_POSITION = new Vector3(5, 5, 5);
+
+// Константы для управления
+const CONTROLS_DAMPING = 0.05;
+
 const container = ref<HTMLDivElement | null>(null);
 let scene: Scene;
 let camera: PerspectiveCamera;
@@ -37,19 +54,15 @@ let resizePlane: Plane;
 let animationFrameId: number;
 let initialMousePosition: Vector2 | null = null;
 
-const init = () => {
+const initScene = () => {
   if (!container.value) return;
 
   scene = new Scene();
-  scene.background = new Color(0x2c3e50);
+  scene.background = SCENE_BACKGROUND;
 
-  camera = new PerspectiveCamera(
-    75,
-    container.value.clientWidth / container.value.clientHeight,
-    0.1,
-    1000
-  );
-  camera.position.set(0, 0, 5);
+  const aspect = container.value.clientWidth / container.value.clientHeight;
+  camera = new PerspectiveCamera(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR);
+  camera.position.copy(CAMERA_POSITION);
   camera.lookAt(0, 0, 0);
 
   renderer = new WebGLRenderer({ antialias: true });
@@ -57,42 +70,65 @@ const init = () => {
   renderer.setPixelRatio(window.devicePixelRatio);
   container.value.appendChild(renderer.domElement);
 
+  initControls();
+  initLights();
+  initObjects();
+
+  // Добавляем обработчики событий
+  container.value.addEventListener("mousedown", onMouseDown);
+  container.value.addEventListener("mousemove", onMouseMove);
+  container.value.addEventListener("mouseup", onMouseUp);
+};
+
+const initControls = () => {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
+  controls.dampingFactor = CONTROLS_DAMPING;
 
   raycaster = new Raycaster();
   mouse = new Vector2();
   resizePlane = new Plane(new Vector3(0, 0, 1), 0);
+};
 
-  const ambientLight = new AmbientLight(0xffffff, 0.5);
+const initLights = () => {
+  const ambientLight = new AmbientLight(
+    AMBIENT_LIGHT_COLOR,
+    AMBIENT_LIGHT_INTENSITY
+  );
   scene.add(ambientLight);
 
-  const directionalLight = new DirectionalLight(0xffffff, 1);
-  directionalLight.position.set(5, 5, 5);
+  const directionalLight = new DirectionalLight(
+    DIRECTIONAL_LIGHT_COLOR,
+    DIRECTIONAL_LIGHT_INTENSITY
+  );
+  directionalLight.position.copy(DIRECTIONAL_LIGHT_POSITION);
   scene.add(directionalLight);
+};
 
+const initObjects = () => {
   door = new Door();
   doorController = new DoorController(door);
   scene.add(door.mesh);
 
   const axesHelper = new AxesHelper(5);
   scene.add(axesHelper);
-
-  container.value.addEventListener("mousedown", onMouseDown);
-  container.value.addEventListener("mousemove", onMouseMove);
-  container.value.addEventListener("mouseup", onMouseUp);
 };
 
-const onMouseDown = (event: MouseEvent) => {
-  if (!container.value) return;
+const updateMousePosition = (event: MouseEvent): Vector2 => {
+  if (!container.value) return mouse;
 
   const rect = container.value.getBoundingClientRect();
   mouse.x = ((event.clientX - rect.left) / container.value.clientWidth) * 2 - 1;
   mouse.y =
     -((event.clientY - rect.top) / container.value.clientHeight) * 2 + 1;
+  return mouse;
+};
 
-  initialMousePosition = new Vector2(mouse.x, mouse.y);
+const onMouseDown = (event: MouseEvent) => {
+  if (!container.value) return;
+
+  updateMousePosition(event);
+  initialMousePosition = mouse.clone();
   raycaster.setFromCamera(mouse, camera);
 
   // Проверяем клик на ручку
@@ -100,89 +136,73 @@ const onMouseDown = (event: MouseEvent) => {
   if (handleIntersects.length > 0) {
     doorController.startDragging(mouse.x);
     controls.enabled = false;
-    if (container.value) {
-      container.value.style.cursor = "grabbing";
-    }
+    container.value.style.cursor = "grabbing";
     return;
   }
 
   // Проверяем клик на наличник
   const frameIntersects = raycaster.intersectObjects(door.frame.mesh.children);
   if (frameIntersects.length > 0) {
-    // Проверяем, закрыта ли дверь
     if (doorController.isOpen()) {
-      if (container.value) {
-        container.value.style.cursor = "not-allowed";
-      }
+      container.value.style.cursor = "not-allowed";
       return;
     }
     selectedPart = frameIntersects[0].object as Mesh;
     controls.enabled = false;
-    if (container.value) {
-      container.value.style.cursor = "grabbing";
-    }
+    container.value.style.cursor = "grabbing";
   }
 };
 
 const onMouseMove = (event: MouseEvent) => {
   if (!container.value) return;
 
-  const rect = container.value.getBoundingClientRect();
-  mouse.x = ((event.clientX - rect.left) / container.value.clientWidth) * 2 - 1;
-  mouse.y =
-    -((event.clientY - rect.top) / container.value.clientHeight) * 2 + 1;
-
+  updateMousePosition(event);
   raycaster.setFromCamera(mouse, camera);
 
   if (doorController.isDraggingHandle()) {
     doorController.handleDrag(mouse.x);
   } else if (selectedPart && initialMousePosition) {
     const intersection = new Vector3();
-    raycaster.ray.intersectPlane(resizePlane, intersection);
+    if (raycaster.ray.intersectPlane(resizePlane, intersection)) {
+      const geometry = selectedPart.geometry as BoxGeometry;
+      const isHorizontal =
+        geometry.parameters.width > geometry.parameters.height;
+      const dimension = isHorizontal ? "height" : "width";
 
-    const geometry = selectedPart.geometry as BoxGeometry;
-    const isHorizontal = geometry.parameters.width > geometry.parameters.height;
-
-    const mouseDelta = new Vector2(
-      mouse.x - initialMousePosition.x,
-      mouse.y - initialMousePosition.y
-    );
-
-    const dominantAxis =
-      Math.abs(mouseDelta.y) > Math.abs(mouseDelta.x) ? "height" : "width";
-
-    doorController.handleResize(
-      isHorizontal ? "height" : "width",
-      new Vector2(intersection.x, intersection.y)
-    );
-  } else {
-    // Проверяем наведение на ручку
-    const handleIntersects = raycaster.intersectObject(door.getHandle());
-
-    // Проверяем наведение на наличник
-    const frameIntersects = raycaster.intersectObjects(
-      door.frame.mesh.children
-    );
-
-    if (container.value) {
-      if (handleIntersects.length > 0) {
-        container.value.style.cursor = "grab";
-      } else if (frameIntersects.length > 0) {
-        // Меняем курсор в зависимости от состояния двери
-        container.value.style.cursor = doorController.isOpen()
-          ? "not-allowed"
-          : "grab";
-      } else {
-        container.value.style.cursor = "auto";
-      }
+      doorController.handleResize(
+        dimension,
+        new Vector2(intersection.x, intersection.y)
+      );
     }
+  } else {
+    updateCursor();
   }
 };
 
-const onMouseUp = () => {
-  if (container.value) {
-    container.value.style.cursor = "auto";
+const updateCursor = () => {
+  if (!container.value) return;
+
+  const handleIntersects = raycaster.intersectObject(door.getHandle());
+  const frameIntersects = raycaster.intersectObjects(door.frame.mesh.children);
+
+  let newCursor = "auto";
+  if (handleIntersects.length > 0) {
+    newCursor = doorController.isDraggingHandle() ? "grabbing" : "grab";
+  } else if (frameIntersects.length > 0) {
+    newCursor = doorController.isOpen()
+      ? "not-allowed"
+      : selectedPart
+      ? "grabbing"
+      : "grab";
   }
+
+  container.value.style.cursor = newCursor;
+};
+
+const onMouseUp = () => {
+  if (!container.value) return;
+
+  container.value.style.cursor = "auto";
   selectedPart = null;
   initialMousePosition = null;
   doorController.stopDragging();
@@ -197,6 +217,7 @@ const animate = () => {
 
 const handleResize = () => {
   if (!container.value || !camera || !renderer) return;
+
   const width = container.value.clientWidth;
   const height = container.value.clientHeight;
 
@@ -206,7 +227,7 @@ const handleResize = () => {
 };
 
 onMounted(() => {
-  init();
+  initScene();
   animate();
   window.addEventListener("resize", handleResize);
 });

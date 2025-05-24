@@ -8,118 +8,79 @@ import {
 import { DoorFrame } from "./DoorFrame";
 
 export class Door {
+  private static readonly INITIAL_WIDTH = 2;
+  private static readonly INITIAL_HEIGHT = 3;
+  private static readonly DOOR_DEPTH = 0.1;
+  private static readonly DOOR_GAP = 0.02;
+  private static readonly MAX_OPEN_ANGLE = Math.PI * 0.8;
+  private static readonly HANDLE_RADIUS = 0.1;
+  private static readonly HANDLE_HEIGHT = 0.3;
+  private static readonly HANDLE_SEGMENTS = 32;
+  private static readonly HANDLE_POSITION_RATIO = 0.9;
+  private static readonly HANDLE_Z_OFFSET = 0.1;
+  private static readonly DOOR_COLOR = 0x8b4513;
+
   public mesh: Group;
   public frame: DoorFrame;
   private doorGroup: Group;
   private doorMesh: Mesh;
   private handleMesh: Mesh;
-  private resizeHandles: Mesh[];
   private width: number;
   private height: number;
-  private depth: number;
-  private maxOpenAngle: number;
-  private doorGap: number;
 
   constructor() {
     this.mesh = new Group();
     this.doorGroup = new Group();
-    this.width = 2;
-    this.height = 3;
-    this.depth = 0.1;
-    this.doorGap = 0.02;
-    this.resizeHandles = [];
-    this.maxOpenAngle = Math.PI * 0.8;
+    this.width = Door.INITIAL_WIDTH;
+    this.height = Door.INITIAL_HEIGHT;
 
     // Создаем наличник
     this.frame = new DoorFrame(this.width, this.height);
 
     // Создаем основу двери с учетом зазора
+    const doorWidth = this.width - Door.DOOR_GAP * 2;
+    const doorHeight = this.height - Door.DOOR_GAP * 2;
+
     const doorGeometry = new BoxGeometry(
-      this.width - this.doorGap * 2,
-      this.height - this.doorGap * 2,
-      this.depth
+      doorWidth,
+      doorHeight,
+      Door.DOOR_DEPTH
     );
     const doorMaterial = new MeshStandardMaterial({
-      color: 0x8b4513,
+      color: Door.DOOR_COLOR,
       roughness: 0.8,
       metalness: 0.2,
     });
     this.doorMesh = new Mesh(doorGeometry, doorMaterial);
-    this.doorMesh.position.x = (this.width - this.doorGap * 2) / 2;
+    this.doorMesh.position.x = doorWidth / 2;
     this.doorGroup.add(this.doorMesh);
 
     // Создаем ручку двери
-    const handleGeometry = new CylinderGeometry(0.1, 0.1, 0.3, 32);
-    const handleMaterial = new MeshStandardMaterial({ color: 0x8b4513 });
+    const handleGeometry = new CylinderGeometry(
+      Door.HANDLE_RADIUS,
+      Door.HANDLE_RADIUS,
+      Door.HANDLE_HEIGHT,
+      Door.HANDLE_SEGMENTS
+    );
+    const handleMaterial = new MeshStandardMaterial({ color: Door.DOOR_COLOR });
     this.handleMesh = new Mesh(handleGeometry, handleMaterial);
     this.handleMesh.rotation.x = Math.PI / 2;
-    this.handleMesh.position.set((this.width - this.doorGap * 2) * 0.9, 0, 0.1);
+    this.handleMesh.position.set(
+      doorWidth * Door.HANDLE_POSITION_RATIO,
+      0,
+      Door.HANDLE_Z_OFFSET
+    );
     this.doorGroup.add(this.handleMesh);
-
-    // Добавляем маркеры изменения размера
-    this.createResizeHandles();
 
     // Добавляем группы в основную группу
     this.mesh.add(this.frame.mesh);
     this.mesh.add(this.doorGroup);
 
     // Смещаем ось вращения подвижной группы к левому торцу
-    this.doorGroup.position.x = -(this.width - this.doorGap * 2) / 2;
-  }
-
-  private createResizeHandles() {
-    const handleMaterial = new MeshStandardMaterial({
-      color: 0x00ff00,
-      transparent: true,
-      opacity: 0,
-      visible: false,
-    });
-
-    // Создаем горизонтальные маркеры (для изменения высоты)
-    const horizontalHandleGeometry = new CylinderGeometry(
-      0.05,
-      0.05,
-      this.width - this.doorGap * 2,
-      16
-    );
-    const topHandle = new Mesh(horizontalHandleGeometry, handleMaterial);
-    const bottomHandle = new Mesh(horizontalHandleGeometry, handleMaterial);
-
-    topHandle.rotation.z = Math.PI / 2;
-    bottomHandle.rotation.z = Math.PI / 2;
-
-    topHandle.position.set(
-      (this.width - this.doorGap * 2) / 2,
-      (this.height - this.doorGap * 2) / 2,
-      0
-    );
-    bottomHandle.position.set(
-      (this.width - this.doorGap * 2) / 2,
-      -(this.height - this.doorGap * 2) / 2,
-      0
-    );
-
-    // Создаем вертикальные маркеры (для изменения ширины)
-    const verticalHandleGeometry = new CylinderGeometry(
-      0.05,
-      0.05,
-      this.height - this.doorGap * 2,
-      16
-    );
-    const leftHandle = new Mesh(verticalHandleGeometry, handleMaterial);
-    const rightHandle = new Mesh(verticalHandleGeometry, handleMaterial);
-
-    leftHandle.position.set(0, 0, 0);
-    rightHandle.position.set(this.width - this.doorGap * 2, 0, 0);
-
-    this.resizeHandles = [rightHandle, leftHandle, topHandle, bottomHandle];
-    this.resizeHandles.forEach((handle) => {
-      this.doorGroup.add(handle);
-    });
+    this.doorGroup.position.x = -doorWidth / 2;
   }
 
   public resize(dimension: "width" | "height", newSize: number) {
-    // Обновляем размеры наличника
     if (dimension === "width") {
       this.width = newSize;
     } else {
@@ -129,28 +90,18 @@ export class Door {
     // Сначала обновляем наличник
     this.frame.resize(this.width, this.height);
 
-    // Теперь обновляем дверь с учетом зазора
-    const doorWidth = this.width - this.doorGap * 2;
-    const doorHeight = this.height - this.doorGap * 2;
+    // Обновляем размеры двери с учетом зазора
+    const doorWidth = this.width - Door.DOOR_GAP * 2;
+    const doorHeight = this.height - Door.DOOR_GAP * 2;
 
     // Обновляем геометрию двери
-    const newGeometry = new BoxGeometry(doorWidth, doorHeight, this.depth);
+    const newGeometry = new BoxGeometry(doorWidth, doorHeight, Door.DOOR_DEPTH);
     this.doorMesh.geometry.dispose();
     this.doorMesh.geometry = newGeometry;
     this.doorMesh.position.x = doorWidth / 2;
 
-    // Удаляем старые маркеры
-    this.resizeHandles.forEach((handle) => {
-      handle.geometry.dispose();
-      this.doorGroup.remove(handle);
-    });
-    this.resizeHandles = [];
-
-    // Создаем новые маркеры с обновленными размерами
-    this.createResizeHandles();
-
     // Обновляем позицию ручки двери
-    this.handleMesh.position.x = doorWidth * 0.9;
+    this.handleMesh.position.x = doorWidth * Door.HANDLE_POSITION_RATIO;
 
     // Обновляем положение оси вращения подвижной группы
     this.doorGroup.position.x = -doorWidth / 2;
@@ -160,20 +111,11 @@ export class Door {
     return this.handleMesh;
   }
 
-  public getResizeHandles(): Mesh[] {
-    return this.resizeHandles;
-  }
-
   public getMaxOpenAngle(): number {
-    return this.maxOpenAngle;
+    return Door.MAX_OPEN_ANGLE;
   }
 
   public setRotation(angle: number): void {
     this.doorGroup.rotation.y = angle;
-  }
-
-  public setDoorGap(gap: number): void {
-    this.doorGap = gap;
-    this.resize("width", this.width);
   }
 }

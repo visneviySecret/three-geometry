@@ -8,6 +8,10 @@ interface DragState {
 }
 
 export class DoorController {
+  private static readonly ROTATION_THRESHOLD = 0.001;
+  private static readonly MIN_SIZE = 0.5;
+  private static readonly ROTATION_SENSITIVITY = 1.5;
+
   private readonly door: Door;
   private dragState: DragState = {
     isDragging: false,
@@ -35,7 +39,8 @@ export class DoorController {
   public handleDrag(mouseX: number): void {
     if (!this.dragState.isDragging) return;
 
-    const dragDelta = mouseX - this.dragState.startX;
+    const dragDelta =
+      (mouseX - this.dragState.startX) * DoorController.ROTATION_SENSITIVITY;
     const rotationAngle = this.calculateRotationAngle(dragDelta);
     this.currentRotation = this.dragState.startRotation + rotationAngle;
     this.door.setRotation(this.currentRotation);
@@ -48,7 +53,6 @@ export class DoorController {
 
   private clampRotationAngle(angle: number, startRotation: number): number {
     const maxAngle = this.door.getMaxOpenAngle();
-    // Учитываем начальный угол при ограничении
     return Math.max(-maxAngle - startRotation, Math.min(-startRotation, angle));
   }
 
@@ -57,16 +61,16 @@ export class DoorController {
     intersection: Vector2
   ): void {
     const newSize = this.calculateNewSize(dimension, intersection);
-    this.door.resize(dimension, Math.max(0.5, newSize));
+
+    this.door.resize(dimension, Math.max(DoorController.MIN_SIZE, newSize));
   }
 
   private calculateNewSize(
     dimension: "width" | "height",
     intersection: Vector2
   ): number {
-    return dimension === "width"
-      ? Math.abs(intersection.x * 2)
-      : Math.abs(intersection.y * 2);
+    const coordinate = dimension === "width" ? intersection.x : intersection.y;
+    return Math.abs(coordinate * 2);
   }
 
   public isDraggingHandle(): boolean {
@@ -74,9 +78,6 @@ export class DoorController {
   }
 
   public isOpen(): boolean {
-    // Дверь считается открытой, если угол поворота не равен 0
-    // Используем небольшой порог для учета погрешностей в вычислениях
-    const threshold = 0.001;
-    return Math.abs(this.currentRotation) > threshold;
+    return Math.abs(this.currentRotation) > DoorController.ROTATION_THRESHOLD;
   }
 }

@@ -1,6 +1,12 @@
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from "three";
 
 export class DoorFrame {
+  private static readonly DEFAULT_FRAME_WIDTH = 0.2;
+  private static readonly DEFAULT_FRAME_THICKNESS = 0.05;
+  private static readonly FRAME_COLOR = 0x6d4c41;
+  private static readonly MATERIAL_ROUGHNESS = 0.7;
+  private static readonly MATERIAL_METALNESS = 0.3;
+
   public mesh: Group;
   private width: number;
   private height: number;
@@ -12,22 +18,26 @@ export class DoorFrame {
     this.mesh = new Group();
     this.width = doorWidth;
     this.height = doorHeight;
-    this.frameWidth = 0.2;
-    this.frameThickness = 0.05;
+    this.frameWidth = DoorFrame.DEFAULT_FRAME_WIDTH;
+    this.frameThickness = DoorFrame.DEFAULT_FRAME_THICKNESS;
 
     this.frameMaterial = new MeshStandardMaterial({
-      color: 0x6d4c41,
-      roughness: 0.7,
-      metalness: 0.3,
+      color: DoorFrame.FRAME_COLOR,
+      roughness: DoorFrame.MATERIAL_ROUGHNESS,
+      metalness: DoorFrame.MATERIAL_METALNESS,
     });
 
     this.createFrame();
   }
 
   private createFrame() {
+    const totalWidth = this.width + this.frameWidth * 2;
+    const totalHeight = this.height + this.frameWidth * 2;
+    const verticalHeight = totalHeight - this.frameWidth * 2; // Вычитаем перекрытия
+
     // Создаем верхнюю и нижнюю планки
     const horizontalGeometry = new BoxGeometry(
-      this.width + this.frameWidth * 2,
+      totalWidth,
       this.frameWidth,
       this.frameThickness
     );
@@ -37,39 +47,26 @@ export class DoorFrame {
     // Создаем боковые планки
     const verticalGeometry = new BoxGeometry(
       this.frameWidth,
-      this.height + this.frameWidth * 2 - this.frameWidth * 2, // Вычитаем перекрытия с горизонтальными планками
+      verticalHeight,
       this.frameThickness
     );
     const leftFrame = new Mesh(verticalGeometry, this.frameMaterial);
     const rightFrame = new Mesh(verticalGeometry, this.frameMaterial);
 
     // Позиционируем планки
-    topFrame.position.set(
-      0,
-      this.height / 2 + this.frameWidth / 2,
-      -this.frameThickness / 2
-    );
+    const zOffset = -this.frameThickness / 2;
+
+    topFrame.position.set(0, this.height / 2 + this.frameWidth / 2, zOffset);
     bottomFrame.position.set(
       0,
       -this.height / 2 - this.frameWidth / 2,
-      -this.frameThickness / 2
+      zOffset
     );
-    leftFrame.position.set(
-      -this.width / 2 - this.frameWidth / 2,
-      0,
-      -this.frameThickness / 2
-    );
-    rightFrame.position.set(
-      this.width / 2 + this.frameWidth / 2,
-      0,
-      -this.frameThickness / 2
-    );
+    leftFrame.position.set(-this.width / 2 - this.frameWidth / 2, 0, zOffset);
+    rightFrame.position.set(this.width / 2 + this.frameWidth / 2, 0, zOffset);
 
     // Добавляем планки в группу наличника
-    this.mesh.add(topFrame);
-    this.mesh.add(bottomFrame);
-    this.mesh.add(leftFrame);
-    this.mesh.add(rightFrame);
+    this.mesh.add(topFrame, bottomFrame, leftFrame, rightFrame);
   }
 
   public resize(width: number, height: number) {
@@ -77,10 +74,11 @@ export class DoorFrame {
     this.height = height;
 
     // Удаляем старые планки
-    this.mesh.children.forEach((child) => {
-      (child as Mesh).geometry.dispose();
+    while (this.mesh.children.length) {
+      const child = this.mesh.children[0] as Mesh;
+      child.geometry.dispose();
       this.mesh.remove(child);
-    });
+    }
 
     // Создаем новые планки с обновленными размерами
     this.createFrame();
