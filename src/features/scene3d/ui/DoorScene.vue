@@ -22,6 +22,7 @@ import {
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Door } from "@/entities/geometry";
 import { DoorController } from "@/entities/geometry/controllers/DoorController";
+import { VHSGrid } from "@/entities/geometry/model/VHSGrid";
 
 // Константы для настройки сцены
 const CAMERA_FOV = 75;
@@ -46,6 +47,7 @@ let camera: PerspectiveCamera;
 let renderer: WebGLRenderer;
 let door: Door;
 let doorController: DoorController;
+let vhsGrid: VHSGrid;
 let controls: OrbitControls;
 let raycaster: Raycaster;
 let mouse: Vector2;
@@ -110,8 +112,18 @@ const initObjects = () => {
   doorController = new DoorController(door);
   scene.add(door.mesh);
 
+  vhsGrid = new VHSGrid(door.getHeight());
+  scene.add(vhsGrid.mesh);
+
   const axesHelper = new AxesHelper(5);
   scene.add(axesHelper);
+};
+
+const animate = () => {
+  animationFrameId = requestAnimationFrame(animate);
+  vhsGrid.update();
+  controls.update();
+  renderer.render(scene, camera);
 };
 
 const updateMousePosition = (event: MouseEvent): Vector2 => {
@@ -207,12 +219,6 @@ const onMouseUp = () => {
   initialMousePosition = null;
   doorController.stopDragging();
   controls.enabled = true;
-};
-
-const animate = () => {
-  animationFrameId = requestAnimationFrame(animate);
-  controls.update();
-  renderer.render(scene, camera);
 };
 
 const handleResize = () => {

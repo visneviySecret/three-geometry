@@ -107,6 +107,10 @@ export class Door {
     this.doorGroup.position.x = -doorWidth / 2;
   }
 
+  public getHeight(): number {
+    return this.height;
+  }
+
   public getHandle(): Mesh {
     return this.handleMesh;
   }
