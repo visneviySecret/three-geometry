@@ -45,7 +45,7 @@ export class House {
 
     const roofGeometry = new ShapeGeometry(roofShape);
     const roofMaterial = new MeshStandardMaterial({
-      color: 0x8b4513,
+      color: 0x8b7355,
       side: 2, // THREE.DoubleSide
     });
     const roof = new Mesh(roofGeometry, roofMaterial);
@@ -54,7 +54,12 @@ export class House {
     this.mesh.add(roof);
 
     // Создаем вторую сторону крыши
-    const roofBack = roof.clone();
+    const roofBackMaterial = new MeshStandardMaterial({
+      color: 0x8b4513,
+      side: 2, // THREE.DoubleSide
+    });
+    const roofBack = new Mesh(roofGeometry, roofBackMaterial);
+    roofBack.position.y = this.height / 2;
     roofBack.position.z = this.depth / 2;
     this.mesh.add(roofBack);
 
@@ -73,23 +78,34 @@ export class House {
     this.mesh.add(this.door.mesh);
 
     // Задняя часть дома (картонная)
-    const backMaterial = new MeshStandardMaterial({ color: 0xd2b48c });
+    const backMaterial = new MeshStandardMaterial({ color: 0x8b7355 });
     const back = new Mesh(houseGeometry, backMaterial);
     back.position.z = -this.depth;
     this.mesh.add(back);
 
     // Подпорки сзади
-    const supportGeometry = new CylinderGeometry(0.15, 0.15, this.height, 8);
-    const supportMaterial = new MeshStandardMaterial({ color: 0x8b4513 });
+    const supportGeometry = new CylinderGeometry(
+      0.15,
+      0.15,
+      this.height + 0.9,
+      8,
+      1,
+      false,
+      0,
+      Math.PI * 1.8
+    );
+    const supportMaterial = new MeshStandardMaterial({ color: 0x8b7355 });
 
     // Левая подпорка
     const leftSupport = new Mesh(supportGeometry, supportMaterial);
-    leftSupport.position.set(-this.width / 2 + 0.6, 0, -this.depth - 0.1);
+    leftSupport.position.set(-this.width / 2 + 0.6, 0, -this.depth - 1.9);
+    leftSupport.rotation.x = Math.PI / 6; // 30 градусов
     this.mesh.add(leftSupport);
 
     // Правая подпорка
     const rightSupport = new Mesh(supportGeometry, supportMaterial);
-    rightSupport.position.set(this.width / 2 - 0.6, 0, -this.depth - 0.1);
+    rightSupport.position.set(this.width / 2 - 0.6, 0, -this.depth - 1.9);
+    rightSupport.rotation.x = Math.PI / 6; // 30 градусов
     this.mesh.add(rightSupport);
   }
 }
