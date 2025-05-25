@@ -7,6 +7,7 @@ import {
   WebGLRenderer,
   Plane,
   BoxGeometry,
+  Color,
 } from "three";
 import { Door } from "../model/Door";
 import { DoorController } from "./DoorController";
@@ -24,6 +25,14 @@ export class SceneController {
   private selectedPart: Mesh | null = null;
   private resizePlane: Plane;
   private initialMousePosition: Vector2 | null = null;
+  private handleOriginalColor: Color | null = null;
+  private readonly BASE_COLOR = 0x8b4513; // Коричневый цвет
+  private readonly HIGHLIGHT_COLOR = 0xffd700; // Золотой цвет
+  private pulseTime: number = 0;
+  private readonly PULSE_SPEED = 2; // Скорость пульсации
+  private readonly PULSE_MIN = 0.3; // Минимальная интенсивность
+  private readonly PULSE_MAX = 1.0; // Максимальная интенсивность
+  private isDragged: boolean = false;
 
   constructor(
     container: HTMLDivElement,
@@ -46,6 +55,7 @@ export class SceneController {
     this.playerController = new PlayerController(container, camera);
 
     this.initEventListeners();
+    this.updateHandleHighlight(); // Инициализируем подсветку при создании
   }
 
   private initEventListeners(): void {
@@ -76,6 +86,7 @@ export class SceneController {
       );
       if (handleIntersects.length > 0) {
         this.doorController.startDragging(this.mouse.x);
+        this.isDragged = true;
         this.container.style.cursor = "grabbing";
         return;
       }
@@ -127,6 +138,13 @@ export class SceneController {
       this.selectedPart = null;
       this.initialMousePosition = null;
       this.doorController.stopDragging();
+
+      // Сбрасываем подсветку при отпускании мыши
+      const handle = this.door.getHandle();
+      if (this.handleOriginalColor) {
+        (handle.material as any).color.copy(this.handleOriginalColor);
+        this.handleOriginalColor = null;
+      }
     }
   }
 
@@ -156,6 +174,41 @@ export class SceneController {
     }
   }
 
+  private updateHandleHighlight(): void {
+    const handle = this.door.getHandle();
+
+    // Если дверь открыта, ручка перетаскивается или была перетащена ранее, возвращаем исходный цвет
+    if (
+      this.doorController.isOpen() ||
+      this.doorController.isDraggingHandle() ||
+      this.isDragged
+    ) {
+      if (this.handleOriginalColor) {
+        (handle.material as any).color.copy(this.handleOriginalColor);
+        this.handleOriginalColor = null;
+      }
+      return;
+    }
+
+    // Если дверь закрыта и ручка не перетаскивалась, применяем анимацию
+    if (!this.handleOriginalColor) {
+      this.handleOriginalColor = (handle.material as any).color.clone();
+    }
+
+    // Вычисляем интенсивность пульсации
+    const pulseIntensity =
+      this.PULSE_MIN +
+      ((Math.sin(this.pulseTime * this.PULSE_SPEED) + 1) / 2) *
+        (this.PULSE_MAX - this.PULSE_MIN);
+
+    // Создаем цвет подсветки с учетом пульсации
+    const baseColor = new Color(this.BASE_COLOR);
+    const highlightColor = new Color(this.HIGHLIGHT_COLOR);
+    const finalColor = baseColor.lerp(highlightColor, pulseIntensity);
+
+    (handle.material as any).color.copy(finalColor);
+  }
+
   private handleResize(): void {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
@@ -167,6 +220,8 @@ export class SceneController {
 
   public update(): void {
     this.playerController.update();
+    this.pulseTime += 0.016; // Примерно 60 FPS
+    this.updateHandleHighlight();
   }
 
   public destroy(): void {
@@ -181,5 +236,11 @@ export class SceneController {
     this.container.removeEventListener("mouseup", this.onMouseUp.bind(this));
     window.removeEventListener("resize", this.handleResize.bind(this));
     this.playerController.destroy();
+
+    // Восстанавливаем исходный цвет при уничтожении
+    const handle = this.door.getHandle();
+    if (this.handleOriginalColor) {
+      (handle.material as any).color.copy(this.handleOriginalColor);
+    }
   }
 }
