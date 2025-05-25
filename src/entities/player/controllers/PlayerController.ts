@@ -41,6 +41,8 @@ export class PlayerController {
   private onContainerClick(): void {
     if (!this.isPointerLocked) {
       this.container.requestPointerLock();
+    } else {
+      document.exitPointerLock();
     }
   }
 
