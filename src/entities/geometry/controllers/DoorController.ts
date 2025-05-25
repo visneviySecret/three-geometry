@@ -1,5 +1,12 @@
 import { Door } from "../model/Door";
 import { Vector2 } from "three";
+import { House } from "../model/House";
+import { DOOR_CONSTANTS } from "../utils/constants";
+import {
+  calculateRotationAngle,
+  clampSize,
+  calculateNewSize,
+} from "../utils/math";
 
 interface DragState {
   isDragging: boolean;
@@ -8,13 +15,8 @@ interface DragState {
 }
 
 export class DoorController {
-  private static readonly ROTATION_THRESHOLD = 0.001;
-  private static readonly MIN_SIZE = 0.5;
-  private static readonly ROTATION_SENSITIVITY = 1.5;
-  private static readonly MAX_DOOR_HEIGHT = 5.6;
-  private static readonly MAX_DOOR_WIDTH = 3.6;
-
   private readonly door: Door;
+  private readonly house: House;
   private dragState: DragState = {
     isDragging: false,
     startX: 0,
@@ -23,8 +25,9 @@ export class DoorController {
   private currentRotation: number = 0;
   public isInteracted: boolean = false;
 
-  constructor(door: Door) {
+  constructor(door: Door, house: House) {
     this.door = door;
+    this.house = house;
   }
 
   public startDragging(mouseX: number): void {
@@ -44,20 +47,14 @@ export class DoorController {
     if (!this.dragState.isDragging) return;
 
     const dragDelta =
-      (mouseX - this.dragState.startX) * DoorController.ROTATION_SENSITIVITY;
-    const rotationAngle = this.calculateRotationAngle(dragDelta);
+      (mouseX - this.dragState.startX) * DOOR_CONSTANTS.ROTATION_SENSITIVITY;
+    const rotationAngle = calculateRotationAngle(
+      dragDelta,
+      this.door.getMaxOpenAngle(),
+      this.dragState.startRotation
+    );
     this.currentRotation = this.dragState.startRotation + rotationAngle;
     this.door.setRotation(this.currentRotation);
-  }
-
-  private calculateRotationAngle(dragDelta: number): number {
-    const rawAngle = dragDelta * this.door.getMaxOpenAngle();
-    return this.clampRotationAngle(rawAngle, this.dragState.startRotation);
-  }
-
-  private clampRotationAngle(angle: number, startRotation: number): number {
-    const maxAngle = this.door.getMaxOpenAngle();
-    return Math.max(-maxAngle - startRotation, Math.min(-startRotation, angle));
   }
 
   public handleResize(
@@ -65,33 +62,21 @@ export class DoorController {
     intersection: Vector2
   ): void {
     this.isInteracted = true;
-    const newSize = this.calculateNewSize(dimension, intersection);
+    const newSize = calculateNewSize(dimension, intersection);
 
-    if (dimension === "height") {
-      this.door.resize(
-        dimension,
-        Math.min(
-          DoorController.MAX_DOOR_HEIGHT,
-          Math.max(DoorController.MIN_SIZE, newSize)
-        )
-      );
-    } else {
-      this.door.resize(
-        dimension,
-        Math.min(
-          DoorController.MAX_DOOR_WIDTH,
-          Math.max(DoorController.MIN_SIZE, newSize)
-        )
-      );
-    }
-  }
+    this.door.resize(
+      dimension,
+      clampSize(
+        newSize,
+        DOOR_CONSTANTS.MIN_SIZE,
+        dimension === "height"
+          ? DOOR_CONSTANTS.MAX_DOOR_HEIGHT
+          : DOOR_CONSTANTS.MAX_DOOR_WIDTH
+      )
+    );
 
-  private calculateNewSize(
-    dimension: "width" | "height",
-    intersection: Vector2
-  ): number {
-    const coordinate = dimension === "width" ? intersection.x : intersection.y;
-    return Math.abs(coordinate * 2);
+    // Обновляем стены после изменения размера двери
+    this.house.updateWalls();
   }
 
   public isDraggingHandle(): boolean {
@@ -99,7 +84,7 @@ export class DoorController {
   }
 
   public isOpen(): boolean {
-    return Math.abs(this.currentRotation) > DoorController.ROTATION_THRESHOLD;
+    return Math.abs(this.currentRotation) > DOOR_CONSTANTS.ROTATION_THRESHOLD;
   }
 
   public resetInteraction(): void {

@@ -14,6 +14,12 @@ import { DoorController } from "./DoorController";
 import { PlayerController } from "@/entities/player";
 import { CollisionManager } from "./CollisionManager";
 import { House } from "../model/House";
+import { UI_CONSTANTS } from "../utils/constants";
+import {
+  calculatePulseIntensity,
+  getPulseColor,
+  updateMousePosition,
+} from "../utils/ui";
 
 export class SceneController {
   private container: HTMLDivElement;
@@ -29,12 +35,7 @@ export class SceneController {
   private resizePlane: Plane;
   private initialMousePosition: Vector2 | null = null;
   private handleOriginalColor: Color | null = null;
-  private readonly BASE_COLOR = 0x8b4513; // Коричневый цвет
-  private readonly HIGHLIGHT_COLOR = 0xffd700; // Золотой цвет
   private pulseTime: number = 0;
-  private readonly PULSE_SPEED = 2; // Скорость пульсации
-  private readonly PULSE_MIN = 0.3; // Минимальная интенсивность
-  private readonly PULSE_MAX = 1.0; // Максимальная интенсивность
   private isDragged: boolean = false;
 
   constructor(
@@ -49,16 +50,13 @@ export class SceneController {
     this.camera = camera;
     this.renderer = renderer;
     this.door = door;
-    this.doorController = doorController;
+    this.doorController = new DoorController(door, house);
 
     this.raycaster = new Raycaster();
     this.mouse = new Vector2();
     this.resizePlane = new Plane(new Vector3(0, 0, 1), 0);
 
-    // Инициализируем менеджер коллизий
     this.collisionManager = new CollisionManager(house);
-
-    // Инициализируем контроллер игрока с менеджером коллизий
     this.playerController = new PlayerController(
       container,
       camera,
@@ -67,7 +65,7 @@ export class SceneController {
     );
 
     this.initEventListeners();
-    this.updateHandleHighlight(); // Инициализируем подсветку при создании
+    this.updateHandleHighlight();
   }
 
   private initEventListeners(): void {
@@ -77,22 +75,13 @@ export class SceneController {
     window.addEventListener("resize", this.handleResize.bind(this));
   }
 
-  private updateMousePosition(event: MouseEvent): Vector2 {
-    const rect = this.container.getBoundingClientRect();
-    this.mouse.x =
-      ((event.clientX - rect.left) / this.container.clientWidth) * 2 - 1;
-    this.mouse.y =
-      -((event.clientY - rect.top) / this.container.clientHeight) * 2 + 1;
-    return this.mouse;
-  }
-
   private onMouseDown(event: MouseEvent): void {
     if (!this.playerController.isPointerLocked) {
-      this.updateMousePosition(event);
+      const { x, y } = updateMousePosition(event, this.container);
+      this.mouse.set(x, y);
       this.initialMousePosition = this.mouse.clone();
       this.raycaster.setFromCamera(this.mouse, this.camera);
 
-      // Проверяем клик на ручку
       const handleIntersects = this.raycaster.intersectObject(
         this.door.getHandle()
       );
@@ -103,7 +92,6 @@ export class SceneController {
         return;
       }
 
-      // Проверяем клик на наличник
       const frameIntersects = this.raycaster.intersectObjects(
         this.door.frame.mesh.children
       );
@@ -117,14 +105,14 @@ export class SceneController {
         return;
       }
 
-      // Если не выбран ни один из активных объектов, сбрасываем флаг взаимодействия
       this.doorController.resetInteraction();
     }
   }
 
   private onMouseMove(event: MouseEvent): void {
     if (!this.playerController.isPointerLocked) {
-      this.updateMousePosition(event);
+      const { x, y } = updateMousePosition(event, this.container);
+      this.mouse.set(x, y);
       this.raycaster.setFromCamera(this.mouse, this.camera);
 
       if (this.doorController.isDraggingHandle()) {
@@ -155,7 +143,6 @@ export class SceneController {
       this.initialMousePosition = null;
       this.doorController.stopDragging();
 
-      // Сбрасываем подсветку при отпускании мыши
       const handle = this.door.getHandle();
       if (this.handleOriginalColor) {
         (handle.material as any).color.copy(this.handleOriginalColor);
@@ -193,7 +180,6 @@ export class SceneController {
   private updateHandleHighlight(): void {
     const handle = this.door.getHandle();
 
-    // Если дверь открыта, ручка перетаскивается или была перетащена ранее, возвращаем исходный цвет
     if (
       this.doorController.isOpen() ||
       this.doorController.isDraggingHandle() ||
@@ -206,21 +192,14 @@ export class SceneController {
       return;
     }
 
-    // Если дверь закрыта и ручка не перетаскивалась, применяем анимацию
     if (!this.handleOriginalColor) {
       this.handleOriginalColor = (handle.material as any).color.clone();
     }
 
-    // Вычисляем интенсивность пульсации
-    const pulseIntensity =
-      this.PULSE_MIN +
-      ((Math.sin(this.pulseTime * this.PULSE_SPEED) + 1) / 2) *
-        (this.PULSE_MAX - this.PULSE_MIN);
-
-    // Создаем цвет подсветки с учетом пульсации
-    const baseColor = new Color(this.BASE_COLOR);
-    const highlightColor = new Color(this.HIGHLIGHT_COLOR);
-    const finalColor = baseColor.lerp(highlightColor, pulseIntensity);
+    const pulseIntensity = calculatePulseIntensity(this.pulseTime);
+    const baseColor = new Color(UI_CONSTANTS.BASE_COLOR);
+    const highlightColor = new Color(UI_CONSTANTS.HIGHLIGHT_COLOR);
+    const finalColor = getPulseColor(baseColor, highlightColor, pulseIntensity);
 
     (handle.material as any).color.copy(finalColor);
   }
@@ -236,7 +215,7 @@ export class SceneController {
 
   public update(): void {
     this.playerController.update();
-    this.pulseTime += 0.016; // Примерно 60 FPS
+    this.pulseTime += 0.016;
     this.updateHandleHighlight();
   }
 
@@ -253,7 +232,6 @@ export class SceneController {
     window.removeEventListener("resize", this.handleResize.bind(this));
     this.playerController.destroy();
 
-    // Восстанавливаем исходный цвет при уничтожении
     const handle = this.door.getHandle();
     if (this.handleOriginalColor) {
       (handle.material as any).color.copy(this.handleOriginalColor);
