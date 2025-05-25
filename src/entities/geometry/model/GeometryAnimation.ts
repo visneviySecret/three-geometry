@@ -5,8 +5,8 @@ export class GeometryAnimation {
   private sphere: Sphere;
   private readonly ROTATION_SPEED = 0.01;
   private readonly ORBIT_SPEED = 0.002;
-  private readonly ORBIT_RADIUS = 1.5;
-  private readonly ORBIT_HEIGHT = 2.5;
+  private readonly ORBIT_RADIUS = 2.5;
+  private readonly ORBIT_HEIGHT = 1;
   private readonly VERTICAL_SPEED = 0.001;
   private readonly VERTICAL_AMPLITUDE = 0.8;
 

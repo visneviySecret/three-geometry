@@ -108,8 +108,6 @@ const initObjects = () => {
   // Добавляем куб и сферу
   cube = new Cube(1);
   sphere = new Sphere(0.7);
-  cube.setPosition(-1.5, 2.5, 0);
-  sphere.setPosition(1.5, 2.5, 0);
   scene.add(cube.mesh);
   scene.add(sphere.mesh);
 
