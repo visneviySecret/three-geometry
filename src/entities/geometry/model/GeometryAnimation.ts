@@ -1,18 +1,20 @@
-import { Cube, Sphere } from "../index";
+import { Cube, Sphere, CompositeSphere } from "../index";
 
 export class GeometryAnimation {
   private cube: Cube;
-  private sphere: Sphere;
+  private sphere: Sphere | CompositeSphere;
   private readonly ROTATION_SPEED = 0.01;
   private readonly ORBIT_SPEED = 0.002;
   private readonly ORBIT_RADIUS = 2.5;
   private readonly ORBIT_HEIGHT = 1;
   private readonly VERTICAL_SPEED = 0.001;
   private readonly VERTICAL_AMPLITUDE = 0.8;
+  private lastTime: number = 0;
 
-  constructor(cube: Cube, sphere: Sphere) {
+  constructor(cube: Cube, sphere: Sphere | CompositeSphere) {
     this.cube = cube;
     this.sphere = sphere;
+    this.lastTime = Date.now();
   }
 
   private cubicBezier(t: number): number {
@@ -35,19 +37,19 @@ export class GeometryAnimation {
   }
 
   public update(): void {
-    // Собственное вращение объектов
+    const currentTime = Date.now();
+    const deltaTime = (currentTime - this.lastTime) / 1000; // Конвертируем в секунды
+    this.lastTime = currentTime;
+
+    // Собственное вращение только для куба
     this.cube.mesh.rotation.z += this.ROTATION_SPEED;
-    this.sphere.mesh.rotation.z += this.ROTATION_SPEED;
 
     // Орбитальное движение вокруг центральной оси
-    const time = Date.now() * this.ORBIT_SPEED;
-    const verticalTime = Date.now() * this.VERTICAL_SPEED;
+    const time = currentTime * this.ORBIT_SPEED;
+    const verticalTime = currentTime * this.VERTICAL_SPEED;
 
     // Вертикальное движение с cubic bezier для куба
     const cubeVerticalOffset = this.getVerticalOffset(verticalTime, 0);
-
-    // Вертикальное движение с cubic bezier для сферы (со смещением фазы)
-    const sphereVerticalOffset = this.getVerticalOffset(verticalTime, 0);
 
     this.cube.setPosition(
       Math.cos(time) * this.ORBIT_RADIUS,
@@ -56,8 +58,13 @@ export class GeometryAnimation {
     );
     this.sphere.setPosition(
       Math.cos(time + Math.PI) * this.ORBIT_RADIUS,
-      this.ORBIT_HEIGHT + sphereVerticalOffset,
+      this.ORBIT_HEIGHT,
       Math.sin(time + Math.PI) * this.ORBIT_RADIUS
     );
+
+    // Обновляем stagger анимацию для составной сферы
+    if (this.sphere instanceof CompositeSphere) {
+      this.sphere.update(deltaTime);
+    }
   }
 }

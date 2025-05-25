@@ -19,7 +19,7 @@ import { Door } from "@/entities/geometry";
 import { DoorController } from "@/entities/geometry/controllers/DoorController";
 import { SceneController } from "@/entities/geometry/controllers/SceneController";
 import { VHSGrid } from "@/entities/geometry/model/VHSGrid";
-import { Cube, Sphere } from "@/entities/geometry";
+import { Cube, CompositeSphere } from "@/entities/geometry";
 import { Fence } from "@/entities/geometry/model/Fence";
 import { GeometryAnimation } from "@/entities/geometry/model/GeometryAnimation";
 
@@ -51,7 +51,7 @@ let vhsGrid: VHSGrid;
 let controls: OrbitControls;
 let animationFrameId: number;
 let cube: Cube;
-let sphere: Sphere;
+let sphere: CompositeSphere;
 let fence: Fence;
 let geometryAnimation: GeometryAnimation;
 
@@ -105,9 +105,9 @@ const initObjects = () => {
   vhsGrid = new VHSGrid(door.getHeight());
   scene.add(vhsGrid.mesh);
 
-  // Добавляем куб и сферу
+  // Добавляем куб и составную сферу
   cube = new Cube(1);
-  sphere = new Sphere(0.7);
+  sphere = new CompositeSphere(0.7, 0.05, 200);
   scene.add(cube.mesh);
   scene.add(sphere.mesh);
 
