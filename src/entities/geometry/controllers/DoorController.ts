@@ -11,6 +11,8 @@ export class DoorController {
   private static readonly ROTATION_THRESHOLD = 0.001;
   private static readonly MIN_SIZE = 0.5;
   private static readonly ROTATION_SENSITIVITY = 1.5;
+  private static readonly MAX_DOOR_HEIGHT = 5.6;
+  private static readonly MAX_DOOR_WIDTH = 3.6;
 
   private readonly door: Door;
   private dragState: DragState = {
@@ -62,7 +64,23 @@ export class DoorController {
   ): void {
     const newSize = this.calculateNewSize(dimension, intersection);
 
-    this.door.resize(dimension, Math.max(DoorController.MIN_SIZE, newSize));
+    if (dimension === "height") {
+      this.door.resize(
+        dimension,
+        Math.min(
+          DoorController.MAX_DOOR_HEIGHT,
+          Math.max(DoorController.MIN_SIZE, newSize)
+        )
+      );
+    } else {
+      this.door.resize(
+        dimension,
+        Math.min(
+          DoorController.MAX_DOOR_WIDTH,
+          Math.max(DoorController.MIN_SIZE, newSize)
+        )
+      );
+    }
   }
 
   private calculateNewSize(
