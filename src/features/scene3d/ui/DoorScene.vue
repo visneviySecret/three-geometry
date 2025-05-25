@@ -14,13 +14,13 @@ import {
   AxesHelper,
   Vector3,
 } from "three";
-import { Door } from "@/entities/geometry";
 import { DoorController } from "@/entities/geometry/controllers/DoorController";
 import { SceneController } from "@/entities/geometry/controllers/SceneController";
 import { VHSGrid } from "@/entities/geometry/model/VHSGrid";
 import { Cube, CompositeSphere } from "@/entities/geometry";
 import { Fence } from "@/entities/geometry/model/Fence";
 import { GeometryAnimation } from "@/entities/geometry/model/GeometryAnimation";
+import { House } from "@/entities/geometry/model/House";
 
 // Константы для настройки сцены
 const CAMERA_FOV = 75;
@@ -40,7 +40,6 @@ const container = ref<HTMLDivElement | null>(null);
 let scene: Scene;
 let camera: PerspectiveCamera;
 let renderer: WebGLRenderer;
-let door: Door;
 let doorController: DoorController;
 let sceneController: SceneController;
 let vhsGrid: VHSGrid;
@@ -49,6 +48,7 @@ let cube: Cube;
 let sphere: CompositeSphere;
 let fence: Fence;
 let geometryAnimation: GeometryAnimation;
+let house: House;
 
 const initScene = () => {
   if (!container.value) return;
@@ -86,12 +86,17 @@ const initLights = () => {
 };
 
 const initObjects = () => {
-  door = new Door();
-  doorController = new DoorController(door);
-  scene.add(door.mesh);
-
-  vhsGrid = new VHSGrid(door.getHeight());
+  // Создаем дом (который включает в себя дверь)
+  house = new House();
+  vhsGrid = new VHSGrid(house.door.getHeight());
   scene.add(vhsGrid.mesh);
+
+  // Размещаем дом на уровне сетки, поднимая его на половину высоты
+  house.mesh.position.set(0, vhsGrid.yPosition + house.getHeight() / 2, -2);
+  scene.add(house.mesh);
+
+  // Инициализируем контроллер двери
+  doorController = new DoorController(house.door);
 
   // Добавляем куб и составную сферу
   cube = new Cube(1);
@@ -117,7 +122,7 @@ const initObjects = () => {
       container.value,
       camera,
       renderer,
-      door,
+      house.door,
       doorController
     );
   }
