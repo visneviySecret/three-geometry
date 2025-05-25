@@ -5,10 +5,12 @@ export class GeometryAnimation {
   private sphere: Sphere | CompositeSphere;
   private readonly ROTATION_SPEED = 0.01;
   private readonly ORBIT_SPEED = 0.002;
-  private readonly ORBIT_RADIUS = 2.5;
-  private readonly ORBIT_HEIGHT = 1;
+  private readonly ORBIT_RADIUS = 3;
+  private readonly ORBIT_HEIGHT = 6;
   private readonly VERTICAL_SPEED = 0.001;
   private readonly VERTICAL_AMPLITUDE = 0.8;
+  private readonly ORBIT_CENTER_X = 0;
+  private readonly ORBIT_CENTER_Z = -2;
   private lastTime: number = 0;
 
   constructor(cube: Cube, sphere: Sphere | CompositeSphere) {
@@ -52,14 +54,14 @@ export class GeometryAnimation {
     const cubeVerticalOffset = this.getVerticalOffset(verticalTime, 0);
 
     this.cube.setPosition(
-      Math.cos(time) * this.ORBIT_RADIUS,
+      Math.cos(time) * this.ORBIT_RADIUS + this.ORBIT_CENTER_X,
       this.ORBIT_HEIGHT + cubeVerticalOffset,
-      Math.sin(time) * this.ORBIT_RADIUS
+      Math.sin(time) * this.ORBIT_RADIUS + this.ORBIT_CENTER_Z
     );
     this.sphere.setPosition(
-      Math.cos(time + Math.PI) * this.ORBIT_RADIUS,
+      Math.cos(time + Math.PI) * this.ORBIT_RADIUS + this.ORBIT_CENTER_X,
       this.ORBIT_HEIGHT,
-      Math.sin(time + Math.PI) * this.ORBIT_RADIUS
+      Math.sin(time + Math.PI) * this.ORBIT_RADIUS + this.ORBIT_CENTER_Z
     );
 
     // Обновляем stagger анимацию для составной сферы
