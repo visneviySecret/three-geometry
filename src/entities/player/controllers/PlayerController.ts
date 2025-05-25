@@ -22,7 +22,7 @@ export class PlayerController {
     this.camera = camera;
 
     // Устанавливаем фиксированную высоту камеры
-    this.camera.position.y = 1.7; // Примерная высота глаз человека
+    this.camera.position.y = 1;
 
     this.initEventListeners();
   }
