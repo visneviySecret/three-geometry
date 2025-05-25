@@ -12,6 +12,8 @@ import {
 import { Door } from "../model/Door";
 import { DoorController } from "./DoorController";
 import { PlayerController } from "@/entities/player";
+import { CollisionManager } from "./CollisionManager";
+import { House } from "../model/House";
 
 export class SceneController {
   private container: HTMLDivElement;
@@ -20,6 +22,7 @@ export class SceneController {
   private door: Door;
   private doorController: DoorController;
   private playerController: PlayerController;
+  private collisionManager: CollisionManager;
   private raycaster: Raycaster;
   private mouse: Vector2;
   private selectedPart: Mesh | null = null;
@@ -39,7 +42,8 @@ export class SceneController {
     camera: PerspectiveCamera,
     renderer: WebGLRenderer,
     door: Door,
-    doorController: DoorController
+    doorController: DoorController,
+    house: House
   ) {
     this.container = container;
     this.camera = camera;
@@ -51,8 +55,15 @@ export class SceneController {
     this.mouse = new Vector2();
     this.resizePlane = new Plane(new Vector3(0, 0, 1), 0);
 
-    // Инициализируем контроллер игрока
-    this.playerController = new PlayerController(container, camera);
+    // Инициализируем менеджер коллизий
+    this.collisionManager = new CollisionManager(house);
+
+    // Инициализируем контроллер игрока с менеджером коллизий
+    this.playerController = new PlayerController(
+      container,
+      camera,
+      this.collisionManager
+    );
 
     this.initEventListeners();
     this.updateHandleHighlight(); // Инициализируем подсветку при создании

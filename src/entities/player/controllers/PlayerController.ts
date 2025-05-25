@@ -1,8 +1,10 @@
 import { PerspectiveCamera, Vector3, Euler, Vector2 } from "three";
+import { CollisionManager } from "@/entities/geometry/controllers/CollisionManager";
 
 export class PlayerController {
   private camera: PerspectiveCamera;
   private container: HTMLDivElement;
+  private collisionManager: CollisionManager;
 
   // Настройки FPS-управления
   private moveSpeed = 0.1;
@@ -16,13 +18,19 @@ export class PlayerController {
   private direction = new Vector3();
   private rotation = new Euler(0, 0, 0, "YXZ");
   private mouse = new Vector2();
+  private playerSize = new Vector3(0.5, 1.7, 0.5); // Размер коллайдера игрока
 
-  constructor(container: HTMLDivElement, camera: PerspectiveCamera) {
+  constructor(
+    container: HTMLDivElement,
+    camera: PerspectiveCamera,
+    collisionManager: CollisionManager
+  ) {
     this.container = container;
     this.camera = camera;
+    this.collisionManager = collisionManager;
 
     // Устанавливаем фиксированную высоту камеры
-    this.camera.position.y = 1;
+    this.camera.position.y = 1.7;
 
     this.initEventListeners();
   }
@@ -132,8 +140,30 @@ export class PlayerController {
       .crossVectors(this.camera.up, cameraDirection)
       .normalize();
 
-    this.camera.position.addScaledVector(cameraDirection, this.velocity.z);
+    // Сохраняем текущую позицию
+    const oldPosition = this.camera.position.clone();
+
+    // Пробуем двигаться по X
     this.camera.position.addScaledVector(cameraRight, this.velocity.x);
+    if (
+      !this.collisionManager.updatePlayerPosition(
+        this.camera.position,
+        this.playerSize
+      )
+    ) {
+      this.camera.position.copy(oldPosition);
+    }
+
+    // Пробуем двигаться по Z
+    this.camera.position.addScaledVector(cameraDirection, this.velocity.z);
+    if (
+      !this.collisionManager.updatePlayerPosition(
+        this.camera.position,
+        this.playerSize
+      )
+    ) {
+      this.camera.position.copy(oldPosition);
+    }
 
     // Сохраняем фиксированную высоту
     this.camera.position.y = 1.7;

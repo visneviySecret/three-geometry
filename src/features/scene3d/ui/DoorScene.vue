@@ -123,7 +123,8 @@ const initObjects = () => {
       camera,
       renderer,
       house.door,
-      doorController
+      doorController,
+      house
     );
   }
 };
