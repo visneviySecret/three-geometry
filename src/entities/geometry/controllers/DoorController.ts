@@ -21,6 +21,7 @@ export class DoorController {
     startRotation: 0,
   };
   private currentRotation: number = 0;
+  public isInteracted: boolean = false;
 
   constructor(door: Door) {
     this.door = door;
@@ -32,6 +33,7 @@ export class DoorController {
       startX: mouseX,
       startRotation: this.currentRotation,
     };
+    this.isInteracted = true;
   }
 
   public stopDragging(): void {
@@ -62,6 +64,7 @@ export class DoorController {
     dimension: "width" | "height",
     intersection: Vector2
   ): void {
+    this.isInteracted = true;
     const newSize = this.calculateNewSize(dimension, intersection);
 
     if (dimension === "height") {
@@ -97,5 +100,9 @@ export class DoorController {
 
   public isOpen(): boolean {
     return Math.abs(this.currentRotation) > DoorController.ROTATION_THRESHOLD;
+  }
+
+  public resetInteraction(): void {
+    this.isInteracted = false;
   }
 }

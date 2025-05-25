@@ -62,7 +62,8 @@ export class SceneController {
     this.playerController = new PlayerController(
       container,
       camera,
-      this.collisionManager
+      this.collisionManager,
+      this.doorController
     );
 
     this.initEventListeners();
@@ -113,7 +114,11 @@ export class SceneController {
         }
         this.selectedPart = frameIntersects[0].object as Mesh;
         this.container.style.cursor = "grabbing";
+        return;
       }
+
+      // Если не выбран ни один из активных объектов, сбрасываем флаг взаимодействия
+      this.doorController.resetInteraction();
     }
   }
 

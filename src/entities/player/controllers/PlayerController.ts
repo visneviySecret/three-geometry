@@ -1,10 +1,12 @@
 import { PerspectiveCamera, Vector3, Euler, Vector2 } from "three";
 import { CollisionManager } from "@/entities/geometry/controllers/CollisionManager";
+import { DoorController } from "@/entities/geometry/controllers/DoorController";
 
 export class PlayerController {
   private camera: PerspectiveCamera;
   private container: HTMLDivElement;
   private collisionManager: CollisionManager;
+  private doorController: DoorController;
 
   // Настройки FPS-управления
   private moveSpeed = 0.1;
@@ -23,11 +25,13 @@ export class PlayerController {
   constructor(
     container: HTMLDivElement,
     camera: PerspectiveCamera,
-    collisionManager: CollisionManager
+    collisionManager: CollisionManager,
+    doorController: DoorController
   ) {
     this.container = container;
     this.camera = camera;
     this.collisionManager = collisionManager;
+    this.doorController = doorController;
 
     // Устанавливаем фиксированную высоту камеры
     this.camera.position.y = 1.7;
@@ -47,9 +51,9 @@ export class PlayerController {
   }
 
   private onContainerClick(): void {
-    if (!this.isPointerLocked) {
+    if (!this.isPointerLocked && !this.doorController.isInteracted) {
       this.container.requestPointerLock();
-    } else {
+    } else if (this.isPointerLocked) {
       document.exitPointerLock();
     }
   }
