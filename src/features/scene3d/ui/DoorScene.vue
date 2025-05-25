@@ -49,6 +49,7 @@ let sphere: CompositeSphere;
 let fence: Fence;
 let geometryAnimation: GeometryAnimation;
 let house: House;
+const isBehindHouse = ref(false);
 
 const initScene = () => {
   if (!container.value) return;
@@ -129,8 +130,22 @@ const initObjects = () => {
   }
 };
 
+const isPlayerBehindHouse = () => {
+  const cameraPosition = camera.position;
+  const housePosition = house.mesh.position;
+
+  // Проверяем, находится ли камера за домом по оси Z
+  return cameraPosition.z < housePosition.z - house.getDepth() / 2;
+};
+
 const animate = () => {
   animationFrameId = requestAnimationFrame(animate);
+
+  // Обновляем флаг положения игрока
+  isBehindHouse.value = isPlayerBehindHouse();
+
+  // Обновляем стены в зависимости от позиции игрока
+  house.updateWalls(isBehindHouse.value);
 
   // Обновляем анимацию геометрических фигур
   geometryAnimation.update();

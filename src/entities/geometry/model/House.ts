@@ -8,7 +8,6 @@ import {
   ShapeGeometry,
 } from "three";
 import { Door } from "@/entities/geometry";
-import { DoorController } from "@/entities/geometry/controllers/DoorController";
 import { HOUSE_CONSTANTS, DOOR_CONSTANTS } from "../utils/constants";
 
 export class House {
@@ -35,9 +34,29 @@ export class House {
     return this.height;
   }
 
+  public getDepth(): number {
+    return this.depth;
+  }
+
+  public setBackWallVisibility(visible: boolean): void {
+    this.mesh.children.forEach((child) => {
+      if (child instanceof Group) {
+        const isBackWall = child.position.z === -this.depth / 2;
+        if (isBackWall) {
+          child.children.forEach((mesh) => {
+            if (mesh instanceof Mesh) {
+              mesh.visible = visible;
+            }
+          });
+        }
+      }
+    });
+  }
+
   private createWallWithHole(
     material: MeshStandardMaterial,
-    zPosition: number
+    zPosition: number,
+    isBehindHouse: boolean = false
   ) {
     const wallGroup = new Group();
 
@@ -45,7 +64,7 @@ export class House {
       this.door.getWidth() >= DOOR_CONSTANTS.MAX_DOOR_WIDTH &&
       this.door.getHeight() >= DOOR_CONSTANTS.MAX_DOOR_HEIGHT;
 
-    if (!isDoorMaxSize) {
+    if (!isDoorMaxSize || isBehindHouse) {
       const wallGeometry = new BoxGeometry(this.width, this.height, this.depth);
       const wall = new Mesh(wallGeometry, material);
       wallGroup.add(wall);
@@ -171,7 +190,7 @@ export class House {
     this.mesh.add(rightSupport);
   }
 
-  public updateWalls(): void {
+  public updateWalls(isBehindHouse: boolean = false): void {
     this.mesh.children.forEach((child) => {
       if (child instanceof Group && child !== this.door.mesh) {
         this.mesh.remove(child);
@@ -192,7 +211,11 @@ export class House {
       color: HOUSE_CONSTANTS.WALL_COLORS.BACK,
       side: 2,
     });
-    const backWall = this.createWallWithHole(backWallMaterial, -this.depth / 2);
+    const backWall = this.createWallWithHole(
+      backWallMaterial,
+      -this.depth / 2,
+      isBehindHouse
+    );
     this.mesh.add(backWall);
   }
 }
