@@ -4,3 +4,4 @@ export * from "./model/Door";
 export * from "./model/VHSGrid";
 export * from "./model/Fence";
 export * from "./model/GeometryAnimation";
+export * from "./controllers/SceneController";

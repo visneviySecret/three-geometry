@@ -12,16 +12,12 @@ import {
   DirectionalLight,
   Color,
   AxesHelper,
-  Raycaster,
-  Vector2,
   Vector3,
-  Mesh,
-  Plane,
-  BoxGeometry,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Door } from "@/entities/geometry";
 import { DoorController } from "@/entities/geometry/controllers/DoorController";
+import { SceneController } from "@/entities/geometry/controllers/SceneController";
 import { VHSGrid } from "@/entities/geometry/model/VHSGrid";
 import { Cube, Sphere } from "@/entities/geometry";
 import { Fence } from "@/entities/geometry/model/Fence";
@@ -44,25 +40,16 @@ const DIRECTIONAL_LIGHT_POSITION = new Vector3(5, 5, 5);
 // Константы для управления
 const CONTROLS_DAMPING = 0.05;
 
-// Константы для анимации
-const ORBIT_HEIGHT = 2.5;
-
-// Функция для получения плавного значения от 0 до 1 и обратно
-
 const container = ref<HTMLDivElement | null>(null);
 let scene: Scene;
 let camera: PerspectiveCamera;
 let renderer: WebGLRenderer;
 let door: Door;
 let doorController: DoorController;
+let sceneController: SceneController;
 let vhsGrid: VHSGrid;
 let controls: OrbitControls;
-let raycaster: Raycaster;
-let mouse: Vector2;
-let selectedPart: Mesh | null = null;
-let resizePlane: Plane;
 let animationFrameId: number;
-let initialMousePosition: Vector2 | null = null;
 let cube: Cube;
 let sphere: Sphere;
 let fence: Fence;
@@ -87,21 +74,12 @@ const initScene = () => {
   initControls();
   initLights();
   initObjects();
-
-  // Добавляем обработчики событий
-  container.value.addEventListener("mousedown", onMouseDown);
-  container.value.addEventListener("mousemove", onMouseMove);
-  container.value.addEventListener("mouseup", onMouseUp);
 };
 
 const initControls = () => {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = CONTROLS_DAMPING;
-
-  raycaster = new Raycaster();
-  mouse = new Vector2();
-  resizePlane = new Plane(new Vector3(0, 0, 1), 0);
 };
 
 const initLights = () => {
@@ -130,8 +108,8 @@ const initObjects = () => {
   // Добавляем куб и сферу
   cube = new Cube(1);
   sphere = new Sphere(0.7);
-  cube.setPosition(-1.5, ORBIT_HEIGHT, 0);
-  sphere.setPosition(1.5, ORBIT_HEIGHT, 0);
+  cube.setPosition(-1.5, 2.5, 0);
+  sphere.setPosition(1.5, 2.5, 0);
   scene.add(cube.mesh);
   scene.add(sphere.mesh);
 
@@ -146,6 +124,18 @@ const initObjects = () => {
 
   const axesHelper = new AxesHelper(5);
   scene.add(axesHelper);
+
+  // Инициализируем контроллер сцены
+  if (container.value) {
+    sceneController = new SceneController(
+      container.value,
+      camera,
+      renderer,
+      door,
+      doorController,
+      controls
+    );
+  }
 };
 
 const animate = () => {
@@ -159,126 +149,16 @@ const animate = () => {
   renderer.render(scene, camera);
 };
 
-const updateMousePosition = (event: MouseEvent): Vector2 => {
-  if (!container.value) return mouse;
-
-  const rect = container.value.getBoundingClientRect();
-  mouse.x = ((event.clientX - rect.left) / container.value.clientWidth) * 2 - 1;
-  mouse.y =
-    -((event.clientY - rect.top) / container.value.clientHeight) * 2 + 1;
-  return mouse;
-};
-
-const onMouseDown = (event: MouseEvent) => {
-  if (!container.value) return;
-
-  updateMousePosition(event);
-  initialMousePosition = mouse.clone();
-  raycaster.setFromCamera(mouse, camera);
-
-  // Проверяем клик на ручку
-  const handleIntersects = raycaster.intersectObject(door.getHandle());
-  if (handleIntersects.length > 0) {
-    doorController.startDragging(mouse.x);
-    controls.enabled = false;
-    container.value.style.cursor = "grabbing";
-    return;
-  }
-
-  // Проверяем клик на наличник
-  const frameIntersects = raycaster.intersectObjects(door.frame.mesh.children);
-  if (frameIntersects.length > 0) {
-    if (doorController.isOpen()) {
-      container.value.style.cursor = "not-allowed";
-      return;
-    }
-    selectedPart = frameIntersects[0].object as Mesh;
-    controls.enabled = false;
-    container.value.style.cursor = "grabbing";
-  }
-};
-
-const onMouseMove = (event: MouseEvent) => {
-  if (!container.value) return;
-
-  updateMousePosition(event);
-  raycaster.setFromCamera(mouse, camera);
-
-  if (doorController.isDraggingHandle()) {
-    doorController.handleDrag(mouse.x);
-  } else if (selectedPart && initialMousePosition) {
-    const intersection = new Vector3();
-    if (raycaster.ray.intersectPlane(resizePlane, intersection)) {
-      const geometry = selectedPart.geometry as BoxGeometry;
-      const isHorizontal =
-        geometry.parameters.width > geometry.parameters.height;
-      const dimension = isHorizontal ? "height" : "width";
-
-      doorController.handleResize(
-        dimension,
-        new Vector2(intersection.x, intersection.y)
-      );
-    }
-  } else {
-    updateCursor();
-  }
-};
-
-const updateCursor = () => {
-  if (!container.value) return;
-
-  const handleIntersects = raycaster.intersectObject(door.getHandle());
-  const frameIntersects = raycaster.intersectObjects(door.frame.mesh.children);
-
-  let newCursor = "auto";
-  if (handleIntersects.length > 0) {
-    newCursor = doorController.isDraggingHandle() ? "grabbing" : "grab";
-  } else if (frameIntersects.length > 0) {
-    newCursor = doorController.isOpen()
-      ? "not-allowed"
-      : selectedPart
-      ? "grabbing"
-      : "grab";
-  }
-
-  container.value.style.cursor = newCursor;
-};
-
-const onMouseUp = () => {
-  if (!container.value) return;
-
-  container.value.style.cursor = "auto";
-  selectedPart = null;
-  initialMousePosition = null;
-  doorController.stopDragging();
-  controls.enabled = true;
-};
-
-const handleResize = () => {
-  if (!container.value || !camera || !renderer) return;
-
-  const width = container.value.clientWidth;
-  const height = container.value.clientHeight;
-
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-  renderer.setSize(width, height);
-};
-
 onMounted(() => {
   initScene();
   animate();
-  window.addEventListener("resize", handleResize);
 });
 
 onBeforeUnmount(() => {
-  if (container.value) {
-    container.value.removeEventListener("mousedown", onMouseDown);
-    container.value.removeEventListener("mousemove", onMouseMove);
-    container.value.removeEventListener("mouseup", onMouseUp);
+  if (sceneController) {
+    sceneController.destroy();
   }
   cancelAnimationFrame(animationFrameId);
-  window.removeEventListener("resize", handleResize);
 });
 </script>
 
