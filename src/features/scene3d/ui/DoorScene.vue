@@ -25,6 +25,7 @@ import { DoorController } from "@/entities/geometry/controllers/DoorController";
 import { VHSGrid } from "@/entities/geometry/model/VHSGrid";
 import { Cube, Sphere } from "@/entities/geometry";
 import { Fence } from "@/entities/geometry/model/Fence";
+import { GeometryAnimation } from "@/entities/geometry/model/GeometryAnimation";
 
 // Константы для настройки сцены
 const CAMERA_FOV = 75;
@@ -44,10 +45,9 @@ const DIRECTIONAL_LIGHT_POSITION = new Vector3(5, 5, 5);
 const CONTROLS_DAMPING = 0.05;
 
 // Константы для анимации
-const ROTATION_SPEED = 0.01;
-const ORBIT_SPEED = 0.002;
-const ORBIT_RADIUS = 1.5;
 const ORBIT_HEIGHT = 2.5;
+
+// Функция для получения плавного значения от 0 до 1 и обратно
 
 const container = ref<HTMLDivElement | null>(null);
 let scene: Scene;
@@ -66,6 +66,7 @@ let initialMousePosition: Vector2 | null = null;
 let cube: Cube;
 let sphere: Sphere;
 let fence: Fence;
+let geometryAnimation: GeometryAnimation;
 
 const initScene = () => {
   if (!container.value) return;
@@ -134,10 +135,13 @@ const initObjects = () => {
   scene.add(cube.mesh);
   scene.add(sphere.mesh);
 
+  // Инициализируем анимацию геометрических фигур
+  geometryAnimation = new GeometryAnimation(cube, sphere);
+
   // Добавляем забор на уровне сетки
   const gridSize = VHSGrid.GRID_SIZE;
   fence = new Fence(gridSize, gridSize, 1);
-  fence.mesh.position.y = vhsGrid.yPosition; // Позиционируем на уровне сетки
+  fence.mesh.position.y = vhsGrid.yPosition;
   scene.add(fence.mesh);
 
   const axesHelper = new AxesHelper(5);
@@ -147,25 +151,8 @@ const initObjects = () => {
 const animate = () => {
   animationFrameId = requestAnimationFrame(animate);
 
-  // Вращение и орбитальное движение куба и сферы
-  if (cube && sphere) {
-    // Собственное вращение объектов
-    cube.mesh.rotation.z += ROTATION_SPEED;
-    sphere.mesh.rotation.z += ROTATION_SPEED;
-
-    // Орбитальное движение вокруг центральной оси
-    const time = Date.now() * ORBIT_SPEED;
-    cube.setPosition(
-      Math.cos(time) * ORBIT_RADIUS,
-      ORBIT_HEIGHT,
-      Math.sin(time) * ORBIT_RADIUS
-    );
-    sphere.setPosition(
-      Math.cos(time + Math.PI) * ORBIT_RADIUS,
-      ORBIT_HEIGHT,
-      Math.sin(time + Math.PI) * ORBIT_RADIUS
-    );
-  }
+  // Обновляем анимацию геометрических фигур
+  geometryAnimation.update();
 
   vhsGrid.update();
   controls.update();
