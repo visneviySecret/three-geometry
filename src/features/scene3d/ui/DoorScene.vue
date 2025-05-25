@@ -96,7 +96,7 @@ const initObjects = () => {
   scene.add(house.mesh);
 
   // Инициализируем контроллер двери
-  doorController = new DoorController(house.door);
+  doorController = new DoorController(house.door, house);
 
   // Добавляем куб и составную сферу
   cube = new Cube(1);
