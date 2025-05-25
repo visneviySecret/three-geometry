@@ -14,7 +14,6 @@ import {
   AxesHelper,
   Vector3,
 } from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Door } from "@/entities/geometry";
 import { DoorController } from "@/entities/geometry/controllers/DoorController";
 import { SceneController } from "@/entities/geometry/controllers/SceneController";
@@ -37,9 +36,6 @@ const DIRECTIONAL_LIGHT_COLOR = 0xffffff;
 const DIRECTIONAL_LIGHT_INTENSITY = 1;
 const DIRECTIONAL_LIGHT_POSITION = new Vector3(5, 5, 5);
 
-// Константы для управления
-const CONTROLS_DAMPING = 0.05;
-
 const container = ref<HTMLDivElement | null>(null);
 let scene: Scene;
 let camera: PerspectiveCamera;
@@ -48,7 +44,6 @@ let door: Door;
 let doorController: DoorController;
 let sceneController: SceneController;
 let vhsGrid: VHSGrid;
-let controls: OrbitControls;
 let animationFrameId: number;
 let cube: Cube;
 let sphere: CompositeSphere;
@@ -71,15 +66,8 @@ const initScene = () => {
   renderer.setPixelRatio(window.devicePixelRatio);
   container.value.appendChild(renderer.domElement);
 
-  initControls();
   initLights();
   initObjects();
-};
-
-const initControls = () => {
-  controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = CONTROLS_DAMPING;
 };
 
 const initLights = () => {
@@ -130,8 +118,7 @@ const initObjects = () => {
       camera,
       renderer,
       door,
-      doorController,
-      controls
+      doorController
     );
   }
 };
@@ -142,8 +129,10 @@ const animate = () => {
   // Обновляем анимацию геометрических фигур
   geometryAnimation.update();
 
+  // Обновляем контроллер сцены
+  sceneController.update();
+
   vhsGrid.update();
-  controls.update();
   renderer.render(scene, camera);
 };
 
