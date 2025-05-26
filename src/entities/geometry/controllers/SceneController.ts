@@ -43,7 +43,6 @@ export class SceneController {
     camera: PerspectiveCamera,
     renderer: WebGLRenderer,
     door: Door,
-    doorController: DoorController,
     house: House
   ) {
     this.container = container;

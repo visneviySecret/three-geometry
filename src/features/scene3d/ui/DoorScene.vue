@@ -14,7 +14,6 @@ import {
   AxesHelper,
   Vector3,
 } from "three";
-import { DoorController } from "@/entities/geometry/controllers/DoorController";
 import { SceneController } from "@/entities/geometry/controllers/SceneController";
 import { VHSGrid } from "@/entities/geometry/model/VHSGrid";
 import { Cube, CompositeSphere } from "@/entities/geometry";
@@ -40,7 +39,6 @@ const container = ref<HTMLDivElement | null>(null);
 let scene: Scene;
 let camera: PerspectiveCamera;
 let renderer: WebGLRenderer;
-let doorController: DoorController;
 let sceneController: SceneController;
 let vhsGrid: VHSGrid;
 let animationFrameId: number;
@@ -96,9 +94,6 @@ const initObjects = () => {
   house.mesh.position.set(0, vhsGrid.yPosition + house.getHeight() / 2, -2);
   scene.add(house.mesh);
 
-  // Инициализируем контроллер двери
-  doorController = new DoorController(house.door, house);
-
   // Добавляем куб и составную сферу
   cube = new Cube(1);
   sphere = new CompositeSphere(0.7, 0.05, 200);
@@ -124,7 +119,6 @@ const initObjects = () => {
       camera,
       renderer,
       house.door,
-      doorController,
       house
     );
   }
