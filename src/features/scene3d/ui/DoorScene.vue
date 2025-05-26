@@ -22,6 +22,7 @@ import { GeometryAnimation } from "@/entities/geometry/model/GeometryAnimation";
 import { House } from "@/entities/geometry/model/House";
 import { Tape } from "@/entities/geometry/model/Tape";
 import { Clouds } from "@/entities/geometry/model/Clouds";
+import { Grass } from "@/entities/geometry/model/Grass";
 import { DOOR_CONSTANTS } from "../../../entities/geometry/utils/constants";
 
 // Константы для настройки сцены
@@ -52,6 +53,7 @@ let geometryAnimation: GeometryAnimation;
 let house: House;
 let tape: Tape;
 let clouds: Clouds;
+let grass: Grass;
 const isBehindHouse = ref(false);
 
 const initScene = () => {
@@ -102,6 +104,11 @@ const initObjects = () => {
   // Размещаем дом на уровне сетки, поднимая его на половину высоты
   house.mesh.position.set(0, vhsGrid.yPosition + house.getHeight() / 2, -2);
   scene.add(house.mesh);
+
+  // Создаем траву и цветы
+  grass = new Grass();
+  grass.mesh.position.y = vhsGrid.yPosition; // Размещаем траву на уровне сетки
+  scene.add(grass.mesh);
 
   // Добавляем жёлтую ленту
   tape = new Tape(DOOR_CONSTANTS.MAX_DOOR_WIDTH * 2, 0.3);
@@ -163,6 +170,9 @@ const animate = () => {
 
   // Обновляем облака
   clouds.update();
+
+  // Обновляем траву и цветы
+  grass.update();
 
   // Обновляем контроллер сцены
   sceneController.update();
