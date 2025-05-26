@@ -130,9 +130,6 @@ const initObjects = () => {
   fence.mesh.position.y = vhsGrid.yPosition;
   scene.add(fence.mesh);
 
-  const axesHelper = new AxesHelper(5);
-  scene.add(axesHelper);
-
   // Инициализируем контроллер сцены
   if (container.value) {
     sceneController = new SceneController(
