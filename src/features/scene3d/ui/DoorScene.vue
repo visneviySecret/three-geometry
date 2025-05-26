@@ -20,6 +20,8 @@ import { Cube, CompositeSphere } from "@/entities/geometry";
 import { Fence } from "@/entities/geometry/model/Fence";
 import { GeometryAnimation } from "@/entities/geometry/model/GeometryAnimation";
 import { House } from "@/entities/geometry/model/House";
+import { Tape } from "@/entities/geometry/model/Tape";
+import { DOOR_CONSTANTS } from "../../../entities/geometry/utils/constants";
 
 // Константы для настройки сцены
 const CAMERA_FOV = 75;
@@ -47,6 +49,7 @@ let sphere: CompositeSphere;
 let fence: Fence;
 let geometryAnimation: GeometryAnimation;
 let house: House;
+let tape: Tape;
 const isBehindHouse = ref(false);
 
 const initScene = () => {
@@ -93,6 +96,11 @@ const initObjects = () => {
   // Размещаем дом на уровне сетки, поднимая его на половину высоты
   house.mesh.position.set(0, vhsGrid.yPosition + house.getHeight() / 2, -2);
   scene.add(house.mesh);
+
+  // Добавляем жёлтую ленту
+  tape = new Tape(DOOR_CONSTANTS.MAX_DOOR_WIDTH * 2, 0.3);
+  tape.mesh.position.set(0, vhsGrid.yPosition + 2, -2);
+  scene.add(tape.mesh);
 
   // Добавляем куб и составную сферу
   cube = new Cube(1);
@@ -143,6 +151,9 @@ const animate = () => {
 
   // Обновляем анимацию геометрических фигур
   geometryAnimation.update();
+
+  // Обновляем ленту
+  tape.update();
 
   // Обновляем контроллер сцены
   sceneController.update();
