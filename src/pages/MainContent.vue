@@ -2,6 +2,7 @@
   <SceneContainer>
     <DoorScene />
     <Frame />
+    <ControlsManual />
   </SceneContainer>
 </template>
 
@@ -10,6 +11,7 @@ import styled from "vue3-styled-components";
 import { useTheme } from "../app/theme/useTheme";
 import { DoorScene } from "@/features/scene3d";
 import { Frame } from "@/widgets/frame";
+import { ControlsManual } from "@/widgets/controls-manual";
 
 const theme = useTheme();
 
