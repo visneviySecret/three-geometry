@@ -21,6 +21,7 @@ import { Fence } from "@/entities/geometry/model/Fence";
 import { GeometryAnimation } from "@/entities/geometry/model/GeometryAnimation";
 import { House } from "@/entities/geometry/model/House";
 import { Tape } from "@/entities/geometry/model/Tape";
+import { Clouds } from "@/entities/geometry/model/Clouds";
 import { DOOR_CONSTANTS } from "../../../entities/geometry/utils/constants";
 
 // Константы для настройки сцены
@@ -50,6 +51,7 @@ let fence: Fence;
 let geometryAnimation: GeometryAnimation;
 let house: House;
 let tape: Tape;
+let clouds: Clouds;
 const isBehindHouse = ref(false);
 
 const initScene = () => {
@@ -88,6 +90,10 @@ const initLights = () => {
 };
 
 const initObjects = () => {
+  // Создаем облака
+  clouds = new Clouds();
+  scene.add(clouds.mesh);
+
   // Создаем дом (который включает в себя дверь)
   house = new House();
   vhsGrid = new VHSGrid(house.door.getHeight());
@@ -154,6 +160,9 @@ const animate = () => {
 
   // Обновляем ленту
   tape.update();
+
+  // Обновляем облака
+  clouds.update();
 
   // Обновляем контроллер сцены
   sceneController.update();
