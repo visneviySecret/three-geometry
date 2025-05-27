@@ -3,7 +3,6 @@ import {
   Mesh,
   PlaneGeometry,
   MeshStandardMaterial,
-  Color,
   DoubleSide,
 } from "three";
 

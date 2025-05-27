@@ -11,7 +11,6 @@ import {
   AmbientLight,
   DirectionalLight,
   Color,
-  AxesHelper,
   Vector3,
 } from "three";
 import { SceneController } from "@/entities/geometry/controllers/SceneController";
