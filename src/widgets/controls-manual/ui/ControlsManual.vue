@@ -99,12 +99,12 @@ onUnmounted(() => {
 .manual__content {
   position: relative;
   background: rgba(26, 26, 26, 0.4);
-  border: 6px solid #8b4513;
-  border-radius: 24px;
-  padding: 3rem;
-  width: 700px;
+  border: 4px solid #8b4513;
+  border-radius: 16px;
+  padding: 2rem;
+  width: 500px;
   color: #fff;
-  box-shadow: 0 12px 18px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(4px);
   pointer-events: auto;
   transform-origin: bottom left;
@@ -136,7 +136,7 @@ onUnmounted(() => {
 }
 
 .manual__title {
-  font-size: 3rem;
+  font-size: 2.2rem;
   color: #c7641d;
   margin: 0;
   font-family: "Playfair Display", serif;
@@ -146,9 +146,9 @@ onUnmounted(() => {
   background: none;
   border: none;
   color: #8b4513;
-  font-size: 3.6rem;
+  font-size: 2.6rem;
   cursor: pointer;
-  padding: 0.75rem;
+  padding: 0.5rem;
   line-height: 1;
   transition: transform 0.2s ease;
 }
@@ -171,13 +171,13 @@ onUnmounted(() => {
 
 .manual__key {
   background: #2a2a2a;
-  border: 3px solid #8b4513;
-  border-radius: 12px;
-  padding: 0.75rem 1.5rem;
-  min-width: 6rem;
+  border: 2px solid #8b4513;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  min-width: 4rem;
   text-align: center;
   font-family: monospace;
-  font-size: 2.7rem;
+  font-size: 2rem;
   color: #a0522d;
   transition: all 0.2s ease;
 }
@@ -189,6 +189,6 @@ onUnmounted(() => {
 
 .manual__description {
   color: #fff;
-  font-size: 2.7rem;
+  font-size: 2rem;
 }
 </style>
