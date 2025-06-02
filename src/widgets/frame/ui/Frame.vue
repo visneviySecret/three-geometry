@@ -7,7 +7,7 @@
       <div class="frame__ornament frame__ornament--right"></div>
       <div class="frame__signature">
         <div class="signature">
-          <div class="signature__title">Three Geometry</div>
+          <div class="signature__title">Door Quest</div>
           <div class="signature__year">E. Belousov - 2025</div>
         </div>
       </div>
